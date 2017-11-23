@@ -52,11 +52,29 @@ public class SurfacePainter extends SurfaceView implements SurfaceHolder.Callbac
     private static final int STATUS_DESTROYED = 5;
 
     /**
-     * 每一帧的时间。定义为 60fps
+     * 每秒帧率。
      */
-    private static final int mFrameTime = (int) (1000 / 60);
+    private static final int FRAME_RATE = 60;
+
+    /**
+     * 每一帧的时间。
+     */
+    private static final int FRAME_TIME_MILLIS = (int) (1000 / FRAME_RATE);
+
+    /**
+     * 动画时间，单位毫秒。
+     */
+    private static final int ANIMATE_TIME_MILLIS = 450;
+
+    /**
+     * 动画持续的帧数。
+     */
+    private static final int ANIMATE_FRAME = (int) (450.0f / 1000.0f * FRAME_RATE);
 
     private static final int DEFAULT_CORNER_RADIUS = 30;
+
+    private static final float MIN_SCALE = 1.0f;
+    private static final float MAX_SCALE = 4.0f;
 
     private SurfaceHolder mHolder;
     private Canvas mCanvas;
@@ -133,17 +151,25 @@ public class SurfacePainter extends SurfaceView implements SurfaceHolder.Callbac
         setCurrentStatus(STATUS_DESTROYED);
     }
 
+    private boolean actionEnd = true;
+
     @Override
     public void run() {
         while (STATUS_DESTROYED != getCurrentStatus()) {
             long start = System.currentTimeMillis();
+
             drawContent();
+
+            if (STATUS_IDLE != getCurrentStatus() && actionEnd) {
+                setCurrentStatus(STATUS_IDLE);
+            }
+
             long end = System.currentTimeMillis();
 
             long time = end - start;
-            if (time < mFrameTime) {
+            if (time < FRAME_TIME_MILLIS) {
                 try {
-                    Thread.sleep(mFrameTime - time);
+                    Thread.sleep(FRAME_TIME_MILLIS - time);
 
                 } catch (InterruptedException e) {
                     e.printStackTrace();
@@ -163,7 +189,8 @@ public class SurfacePainter extends SurfaceView implements SurfaceHolder.Callbac
         try {
             mCanvas = mHolder.lockCanvas();
 
-            LogUtil.d("Painter", "scale = " + mCurrentScale + ", offX = " + mCurrentOffsetX + ", offY = " + mCurrentOffsetY);
+            LogUtil.d("Painter", "scale = " + mCurrentScale
+                    + ", offX = " + mCurrentOffsetX + ", offY = " + mCurrentOffsetY);
             mCanvas.translate(mCurrentOffsetX, mCurrentOffsetY);
             mCanvas.scale(mCurrentScale, mCurrentScale);
 
@@ -184,11 +211,11 @@ public class SurfacePainter extends SurfaceView implements SurfaceHolder.Callbac
      * 绘制画布背景。
      */
     private void drawCanvasBackground() {
-        Bitmap t = BitmapFactory.decodeResource(getResources(), R.drawable.canvas_background);
-        BitmapShader bs = new BitmapShader(t, Shader.TileMode.REPEAT, Shader.TileMode.REPEAT);
+        Bitmap bitmap = BitmapFactory.decodeResource(getResources(), R.drawable.canvas_background);
+        BitmapShader shader = new BitmapShader(
+                bitmap, Shader.TileMode.REPEAT, Shader.TileMode.REPEAT);
         Paint p = new Paint();
-        p.setShader(bs);
-
+        p.setShader(shader);
         mCanvas.drawPaint(p);
 
         Paint paint = new Paint();
@@ -203,8 +230,6 @@ public class SurfacePainter extends SurfaceView implements SurfaceHolder.Callbac
     private int pointer1Index = -1;
     private int pointer2Index = -1;
 
-    // 当前触摸点数量
-    private int currentFingerCount;
     private boolean isFirstFingerTouching = false;
 
     private float downX;
@@ -218,18 +243,12 @@ public class SurfacePainter extends SurfaceView implements SurfaceHolder.Callbac
     private float scaleStartX2;
     private float scaleStartY2;
 
-
+    // 缩放时控制点在 canvas 上的坐标
     private float canvasPivotX;
     private float canvasPivotY;
 
+    // 开始缩放时的倍数
     private float scaleStartScale;
-
-    private float scaleCurrentX1;
-    private float scaleCurrentY1;
-    private float scaleCurrentX2;
-    private float scaleCurrentY2;
-    private float scaleCurrentPivotX;
-    private float scaleCurrentPivotY;
 
     @Override
     public boolean onTouchEvent(MotionEvent event) {
@@ -240,8 +259,9 @@ public class SurfacePainter extends SurfaceView implements SurfaceHolder.Callbac
             case MotionEvent.ACTION_DOWN:
                 isFirstFingerTouching = true;
                 pointer1Index = event.getActionIndex();
-                currentFingerCount = event.getPointerCount();
                 setCurrentStatus(STATUS_PAINTING);
+                actionEnd = false;
+                performClick();
 
                 mPath.moveTo(coordinateScreen2Canvas(x, mCurrentOffsetX),
                         coordinateScreen2Canvas(y, mCurrentOffsetY));
@@ -250,9 +270,7 @@ public class SurfacePainter extends SurfaceView implements SurfaceHolder.Callbac
                 break;
 
             case MotionEvent.ACTION_POINTER_DOWN:
-                currentFingerCount = event.getPointerCount();
-
-                if (2 == currentFingerCount) {
+                if (2 == event.getPointerCount()) {
                     if (-1 == pointer2Index) {
                         pointer2Index = event.getActionIndex();
 
@@ -290,19 +308,19 @@ public class SurfacePainter extends SurfaceView implements SurfaceHolder.Callbac
                         break;
 
                     case STATUS_SCALING:
-                        scaleCurrentX1 = event.getX(pointer1Index);
-                        scaleCurrentY1 = event.getY(pointer1Index);
-                        scaleCurrentX2 = event.getX(pointer2Index);
-                        scaleCurrentY2 = event.getY(pointer2Index);
+                        float scaleCurrentX1 = event.getX(pointer1Index);
+                        float scaleCurrentY1 = event.getY(pointer1Index);
+                        float scaleCurrentX2 = event.getX(pointer2Index);
+                        float scaleCurrentY2 = event.getY(pointer2Index);
 
                         double beforeSpan = Math.hypot(
                                 scaleStartX1 - scaleStartX2, scaleStartY1 - scaleStartY2);
                         double afterSpan = Math.hypot(scaleCurrentX1 - scaleCurrentX2,
                                 scaleCurrentY1 - scaleCurrentY2);
 
-                        scaleCurrentPivotX = Math.min(scaleCurrentX1, scaleCurrentX2)
+                        float scaleCurrentPivotX = Math.min(scaleCurrentX1, scaleCurrentX2)
                                 + (Math.abs(scaleCurrentX1 - scaleCurrentX2) / 2);
-                        scaleCurrentPivotY = Math.min(scaleCurrentY1, scaleCurrentY2)
+                        float scaleCurrentPivotY = Math.min(scaleCurrentY1, scaleCurrentY2)
                                 + (Math.abs(scaleCurrentY1 - scaleCurrentY2) / 2);
 
                         mCurrentScale = (float) (scaleStartScale * (afterSpan / beforeSpan));
@@ -327,7 +345,6 @@ public class SurfacePainter extends SurfaceView implements SurfaceHolder.Callbac
                 break;
 
             case MotionEvent.ACTION_POINTER_UP:
-                currentFingerCount = event.getPointerCount() - 1;
                 int actionIndex = event.getActionIndex();
 
                 if (actionIndex == pointer1Index) {
@@ -351,11 +368,10 @@ public class SurfacePainter extends SurfaceView implements SurfaceHolder.Callbac
                 break;
 
             case MotionEvent.ACTION_UP:
-                currentFingerCount = 0;
                 isFirstFingerTouching = false;
                 pointer1Index = -1;
                 pointer2Index = -1;
-                setCurrentStatus(STATUS_IDLE);
+                actionEnd = true;
                 break;
 
             case MotionEvent.ACTION_CANCEL:
@@ -364,6 +380,12 @@ public class SurfacePainter extends SurfaceView implements SurfaceHolder.Callbac
         }
 
         return true;
+    }
+
+
+    @Override
+    public boolean performClick() {
+        return super.performClick();
     }
 
     /**

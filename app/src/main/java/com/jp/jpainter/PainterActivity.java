@@ -14,6 +14,7 @@ public class PainterActivity extends AppCompatActivity {
         setContentView(R.layout.activity_painter);
 
         FrameLayout painterContainer = findViewById(R.id.fl_painter_container);
-        painterContainer.addView(new SurfacePainter(this));
+        SurfacePainter painter = new SurfacePainter(this);
+        painterContainer.addView(painter);
     }
 }

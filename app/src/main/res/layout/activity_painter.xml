@@ -16,5 +16,19 @@
         android:id="@+id/fl_painter_container"
         android:layout_width="0dp"
         android:layout_height="match_parent"
-        android:layout_weight="1" />
+        android:layout_weight="1">
+
+        <com.jp.jpainter.core.SurfacePainter
+            android:id="@+id/sp_painter"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" />
+
+        <TextView
+            android:id="@+id/tv_scale"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal|bottom"
+            android:background="@android:color/darker_gray"
+            android:padding="8dp" />
+    </FrameLayout>
 </LinearLayout>

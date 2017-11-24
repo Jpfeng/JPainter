@@ -460,7 +460,14 @@ public class SurfacePainter extends SurfaceView implements SurfaceHolder.Callbac
                         float scaleCurrentPivotY = Math.min(scaleCurrentY1, scaleCurrentY2)
                                 + (Math.abs(scaleCurrentY1 - scaleCurrentY2) / 2);
 
-                        mCurrentScale = (float) (scaleStartScale * (afterSpan / beforeSpan));
+                        float scale = (float) (scaleStartScale * (afterSpan / beforeSpan));
+                        if (scale > MAX_SCALE) {
+                            scale = MAX_SCALE + (scale - MAX_SCALE) / 4.0f;
+                        } else if (scale < MIN_SCALE) {
+                            scale = MIN_SCALE - (MIN_SCALE - scale) / 4.0f;
+                        }
+                        mCurrentScale = scale;
+
                         mCurrentOffsetX = scaleCurrentPivotX - canvasPivotX * mCurrentScale;
                         mCurrentOffsetY = scaleCurrentPivotY - canvasPivotY * mCurrentScale;
 

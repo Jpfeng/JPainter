@@ -233,8 +233,6 @@ public class SurfacePainter extends SurfaceView implements SurfaceHolder.Callbac
         try {
             mCanvas = mHolder.lockCanvas();
 
-            LogUtil.d("Painter", "scale = " + mCurrentScale
-                    + ", offX = " + mCurrentOffsetX + ", offY = " + mCurrentOffsetY);
             mCanvas.translate(mCurrentOffsetX, mCurrentOffsetY);
             mCanvas.scale(mCurrentScale, mCurrentScale);
 
@@ -378,6 +376,8 @@ public class SurfacePainter extends SurfaceView implements SurfaceHolder.Callbac
 
     private long moveStartTime;
 
+    private boolean startRecordPath = false;
+
     @Override
     public boolean onTouchEvent(MotionEvent event) {
         float x = event.getX();
@@ -389,10 +389,9 @@ public class SurfacePainter extends SurfaceView implements SurfaceHolder.Callbac
                 pointer1Index = event.getActionIndex();
                 setCurrentStatus(STATUS_PAINTING);
                 actionEnd = false;
+                startRecordPath = false;
                 performClick();
 
-                mPath.moveTo(coordinateScreen2Canvas(x, mCurrentOffsetX),
-                        coordinateScreen2Canvas(y, mCurrentOffsetY));
                 downX = x;
                 downY = y;
                 break;
@@ -435,6 +434,11 @@ public class SurfacePainter extends SurfaceView implements SurfaceHolder.Callbac
                 switch (getCurrentStatus()) {
                     case STATUS_PAINTING:
                         if (isFirstFingerTouching) {
+                            if (!startRecordPath) {
+                                mPath.moveTo(coordinateScreen2Canvas(downX, mCurrentOffsetX),
+                                        coordinateScreen2Canvas(downY, mCurrentOffsetY));
+                                startRecordPath = true;
+                            }
                             mPath.lineTo(coordinateScreen2Canvas(x, mCurrentOffsetX),
                                     coordinateScreen2Canvas(y, mCurrentOffsetY));
                         }

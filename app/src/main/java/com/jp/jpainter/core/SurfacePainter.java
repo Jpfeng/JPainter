@@ -69,7 +69,8 @@ public class SurfacePainter extends SurfaceView implements SurfaceHolder.Callbac
     /**
      * 动画持续的帧数。
      */
-    private static final int ANIMATE_FRAME = (int) (((float) ANIMATE_TIME_MILLIS) / 1000.0f * FRAME_RATE);
+    private static final int ANIMATE_FRAME =
+            (int) (((float) ANIMATE_TIME_MILLIS) / 1000.0f * FRAME_RATE);
 
     /**
      * 默认笔迹圆滑半径
@@ -95,8 +96,7 @@ public class SurfacePainter extends SurfaceView implements SurfaceHolder.Callbac
     private int mWidth;
     private int mCurrentStatus;
 
-    private float mCurrentOffsetX = 0;
-    private float mCurrentOffsetY = 0;
+    private Offset mCurrentOffset = new Offset(0f, 0f);
     private float mCurrentScale = 1.0f;
 
     private OnScaleChangeListener mScaleListener;
@@ -233,7 +233,7 @@ public class SurfacePainter extends SurfaceView implements SurfaceHolder.Callbac
         try {
             mCanvas = mHolder.lockCanvas();
 
-            mCanvas.translate(mCurrentOffsetX, mCurrentOffsetY);
+            mCanvas.translate(mCurrentOffset.x, mCurrentOffset.y);
             mCanvas.scale(mCurrentScale, mCurrentScale);
 
             drawCanvasBackground();
@@ -272,72 +272,70 @@ public class SurfacePainter extends SurfaceView implements SurfaceHolder.Callbac
 
     private float startScale;
     private float endScale;
-    private float startOffsetX;
-    private float startOffsetY;
-    private float endOffsetX;
-    private float endOffsetY;
+    private Offset startOffset = new Offset(0f, 0f);
+    private Offset endOffset = new Offset(0f, 0f);
 
     /**
      * 计算关键值。包括调整开始的倍率，偏移 以及调整后的倍率，偏移。
      */
     private void evaluateAnimateKeyFrameValue() {
         startScale = mCurrentScale;
-        startOffsetX = mCurrentOffsetX;
-        startOffsetY = mCurrentOffsetY;
+        startOffset.x = mCurrentOffset.x;
+        startOffset.y = mCurrentOffset.y;
 
         if (MIN_SCALE > startScale) {
             // 当前倍率 < MIN ，调整后倍率为MIN，偏移一定均为0
             endScale = MIN_SCALE;
-            endOffsetX = 0f;
-            endOffsetY = 0f;
+            endOffset.x = 0f;
+            endOffset.y = 0f;
 
         } else if (MAX_SCALE < startScale) {
             // 当前倍率 > MAX ，调整后倍率为MAX，偏移需要根据缩放控制点计算
             endScale = MAX_SCALE;
-            endOffsetX = scaleLastPivotX - canvasPivotX * endScale;
-            endOffsetY = scaleLastPivotY - canvasPivotY * endScale;
+            endOffset.x = scaleLastPivot.x - canvasPivot.x * endScale;
+            endOffset.y = scaleLastPivot.y - canvasPivot.y * endScale;
 
             // 如果计算的偏移过度，还需要调整回来
-            if (mWidth < ((mWidth - endOffsetX) / endScale)) {
-                endOffsetX = (1.0f - endScale) * mWidth;
+            if (mWidth < ((mWidth - endOffset.x) / endScale)) {
+                endOffset.x = (1.0f - endScale) * mWidth;
             }
-            if (mHeight < ((mHeight - endOffsetY) / endScale)) {
-                endOffsetY = (1.0f - endScale) * mHeight;
+            if (mHeight < ((mHeight - endOffset.y) / endScale)) {
+                endOffset.y = (1.0f - endScale) * mHeight;
             }
 
         } else {
             // 其他情况，倍率不变。偏移根据情况计算
             endScale = startScale;
-            if (mWidth < coordinateScreen2Canvas(mWidth, startOffsetX)) {
-                endOffsetX = (1.0f - endScale) * mWidth;
+            if (mWidth < coordinateScreen2Canvas(mWidth, startOffset.x)) {
+                endOffset.x = (1.0f - endScale) * mWidth;
             } else {
-                endOffsetX = startOffsetX;
+                endOffset.x = startOffset.x;
             }
-            if (mHeight < coordinateScreen2Canvas(mHeight, startOffsetY)) {
-                endOffsetY = (1.0f - endScale) * mHeight;
+            if (mHeight < coordinateScreen2Canvas(mHeight, startOffset.y)) {
+                endOffset.y = (1.0f - endScale) * mHeight;
             } else {
-                endOffsetY = startOffsetY;
+                endOffset.y = startOffset.y;
             }
         }
 
         // 无论何种情况，偏移值不会 >0
-        if (endOffsetX > 0f) {
-            endOffsetX = 0f;
+        if (endOffset.x > 0f) {
+            endOffset.x = 0f;
         }
-        if (endOffsetY > 0f) {
-            endOffsetY = 0f;
+        if (endOffset.y > 0f) {
+            endOffset.y = 0f;
         }
     }
 
     /**
      * 计算调整过程中的倍率及偏移
      *
-     * @param fraction 在整体调整进程中的比率
+     * @param fraction 在整体调整进程中的比率，取值 0.0 ~ 1.0
      */
     private void evaluateCurrentScaleAndOffset(float fraction) {
         mCurrentScale = startScale + fraction * (endScale - startScale);
-        mCurrentOffsetX = startOffsetX + fraction * (endOffsetX - startOffsetX);
-        mCurrentOffsetY = startOffsetY + fraction * (endOffsetY - startOffsetY);
+        mCurrentOffset.x = startOffset.x + fraction * (endOffset.x - startOffset.x);
+        mCurrentOffset.y = startOffset.y + fraction * (endOffset.y - startOffset.y);
 
         // 保证监听回调在主线程执行
         post(() -> {
@@ -351,31 +349,21 @@ public class SurfacePainter extends SurfaceView implements SurfaceHolder.Callbac
     private int pointer1Index = -1;
     private int pointer2Index = -1;
 
-    private boolean isFirstFingerTouching = false;
-
-    private float downX;
-    private float downY;
-
-    private float moveStartX;
-    private float moveStartY;
-
-    private float scaleStartX1;
-    private float scaleStartY1;
-    private float scaleStartX2;
-    private float scaleStartY2;
-
+    private Point down = new Point(0f, 0f);
+    private Point last = new Point(0f, 0f);
+    private Point moveStart = new Point(0f, 0f);
+    private Point scaleStart1 = new Point(0f, 0f);
+    private Point scaleStart2 = new Point(0f, 0f);
     // 缩放开始时控制点在 canvas 上的坐标
-    private float canvasPivotX;
-    private float canvasPivotY;
+    private Point canvasPivot = new Point(0f, 0f);
+    private Point scaleLastPivot = new Point(0f, 0f);
 
     // 开始缩放时的倍数
     private float scaleStartScale;
 
-    private float scaleLastPivotX;
-    private float scaleLastPivotY;
-
     private long moveStartTime;
 
+    private boolean isFirstFingerTouching = false;
     private boolean startRecordPath = false;
 
     @Override
@@ -392,8 +380,8 @@ public class SurfacePainter extends SurfaceView implements SurfaceHolder.Callbac
                 startRecordPath = false;
                 performClick();
 
-                downX = x;
-                downY = y;
+                down.x = x;
+                down.y = y;
                 break;
 
             case MotionEvent.ACTION_POINTER_DOWN:
@@ -409,17 +397,17 @@ public class SurfacePainter extends SurfaceView implements SurfaceHolder.Callbac
                         boolean shouldCallScaleListener = !(STATUS_MOVING == getCurrentStatus());
                         setCurrentStatus(STATUS_SCALING);
 
-                        scaleStartX1 = event.getX(pointer1Index);
-                        scaleStartY1 = event.getY(pointer1Index);
-                        scaleStartX2 = event.getX(pointer2Index);
-                        scaleStartY2 = event.getY(pointer2Index);
-                        float scaleStartPivotX = Math.min(scaleStartX1, scaleStartX2)
-                                + (Math.abs(scaleStartX1 - scaleStartX2) / 2);
-                        float scaleStartPivotY = Math.min(scaleStartY1, scaleStartY2)
-                                + (Math.abs(scaleStartY1 - scaleStartY2) / 2);
+                        scaleStart1.x = event.getX(pointer1Index);
+                        scaleStart1.y = event.getY(pointer1Index);
+                        scaleStart2.x = event.getX(pointer2Index);
+                        scaleStart2.y = event.getY(pointer2Index);
+                        float scaleStartPivotX = Math.min(scaleStart1.x, scaleStart2.x)
+                                + (Math.abs(scaleStart1.x - scaleStart2.x) / 2);
+                        float scaleStartPivotY = Math.min(scaleStart1.y, scaleStart2.y)
+                                + (Math.abs(scaleStart1.y - scaleStart2.y) / 2);
 
-                        canvasPivotX = coordinateScreen2Canvas(scaleStartPivotX, mCurrentOffsetX);
-                        canvasPivotY = coordinateScreen2Canvas(scaleStartPivotY, mCurrentOffsetY);
+                        canvasPivot.x = coordinateScreen2Canvas(scaleStartPivotX, mCurrentOffset.x);
+                        canvasPivot.y = coordinateScreen2Canvas(scaleStartPivotY, mCurrentOffset.y);
 
                         scaleStartScale = mCurrentScale;
 
@@ -435,30 +423,32 @@ public class SurfacePainter extends SurfaceView implements SurfaceHolder.Callbac
                     case STATUS_PAINTING:
                         if (isFirstFingerTouching) {
                             if (!startRecordPath) {
-                                mPath.moveTo(coordinateScreen2Canvas(downX, mCurrentOffsetX),
-                                        coordinateScreen2Canvas(downY, mCurrentOffsetY));
+                                mPath.moveTo(coordinateScreen2Canvas(down.x, mCurrentOffset.x),
+                                        coordinateScreen2Canvas(down.y, mCurrentOffset.y));
                                 startRecordPath = true;
                             }
-                            mPath.lineTo(coordinateScreen2Canvas(x, mCurrentOffsetX),
-                                    coordinateScreen2Canvas(y, mCurrentOffsetY));
+
+                            mPath.lineTo(coordinateScreen2Canvas(x, mCurrentOffset.x),
+                                    coordinateScreen2Canvas(y, mCurrentOffset.y));
                         }
                         break;
 
                     case STATUS_SCALING:
-                        float scaleCurrentX1 = event.getX(pointer1Index);
-                        float scaleCurrentY1 = event.getY(pointer1Index);
-                        float scaleCurrentX2 = event.getX(pointer2Index);
-                        float scaleCurrentY2 = event.getY(pointer2Index);
+                        Point scaleCurrent1 = new Point(
+                                event.getX(pointer1Index), event.getY(pointer1Index));
+                        Point scaleCurrent2 = new Point(
+                                event.getX(pointer2Index), event.getY(pointer2Index));
 
                         double beforeSpan = Math.hypot(
-                                scaleStartX1 - scaleStartX2, scaleStartY1 - scaleStartY2);
-                        double afterSpan = Math.hypot(scaleCurrentX1 - scaleCurrentX2,
-                                scaleCurrentY1 - scaleCurrentY2);
+                                scaleStart1.x - scaleStart2.x, scaleStart1.y - scaleStart2.y);
+                        double afterSpan = Math.hypot(scaleCurrent1.x - scaleCurrent2.x,
+                                scaleCurrent1.y - scaleCurrent2.y);
 
-                        float scaleCurrentPivotX = Math.min(scaleCurrentX1, scaleCurrentX2)
-                                + (Math.abs(scaleCurrentX1 - scaleCurrentX2) / 2);
-                        float scaleCurrentPivotY = Math.min(scaleCurrentY1, scaleCurrentY2)
-                                + (Math.abs(scaleCurrentY1 - scaleCurrentY2) / 2);
+                        Point scaleCurrentPivot = new Point(
+                                Math.min(scaleCurrent1.x, scaleCurrent2.x)
+                                        + (Math.abs(scaleCurrent1.x - scaleCurrent2.x) / 2),
+                                Math.min(scaleCurrent1.y, scaleCurrent2.y)
+                                        + (Math.abs(scaleCurrent1.y - scaleCurrent2.y) / 2));
 
                         float scale = (float) (scaleStartScale * (afterSpan / beforeSpan));
                         if (scale > MAX_SCALE) {
@@ -468,11 +458,11 @@ public class SurfacePainter extends SurfaceView implements SurfaceHolder.Callbac
                         }
                         mCurrentScale = scale;
 
-                        mCurrentOffsetX = scaleCurrentPivotX - canvasPivotX * mCurrentScale;
-                        mCurrentOffsetY = scaleCurrentPivotY - canvasPivotY * mCurrentScale;
+                        mCurrentOffset.x = scaleCurrentPivot.x - canvasPivot.x * mCurrentScale;
+                        mCurrentOffset.y = scaleCurrentPivot.y - canvasPivot.y * mCurrentScale;
 
-                        scaleLastPivotX = scaleCurrentPivotX;
-                        scaleLastPivotY = scaleCurrentPivotY;
+                        scaleLastPivot.x = scaleCurrentPivot.x;
+                        scaleLastPivot.y = scaleCurrentPivot.y;
 
                         if (null != mScaleListener) {
                             mScaleListener.onScaleChange(mCurrentScale);
@@ -480,17 +470,17 @@ public class SurfacePainter extends SurfaceView implements SurfaceHolder.Callbac
                         break;
 
                     case STATUS_MOVING:
-                        mCurrentOffsetX += x - moveStartX;
-                        mCurrentOffsetY += y - moveStartY;
+                        mCurrentOffset.x += x - moveStart.x;
+                        mCurrentOffset.y += y - moveStart.y;
 
-                        moveStartX = x;
-                        moveStartY = y;
+                        moveStart.x = x;
+                        moveStart.y = y;
 
                         if (shouldMovePivot(event)) {
-                            scaleLastPivotX = x;
-                            scaleLastPivotY = y;
-                            canvasPivotX = coordinateScreen2Canvas(x, mCurrentOffsetX);
-                            canvasPivotY = coordinateScreen2Canvas(y, mCurrentOffsetY);
+                            scaleLastPivot.x = x;
+                            scaleLastPivot.y = y;
+                            canvasPivot.x = coordinateScreen2Canvas(x, mCurrentOffset.x);
+                            canvasPivot.y = coordinateScreen2Canvas(y, mCurrentOffset.y);
                         }
                         break;
 
@@ -512,9 +502,9 @@ public class SurfacePainter extends SurfaceView implements SurfaceHolder.Callbac
                         && (actionIndex == pointer1Index || actionIndex == pointer2Index)) {
                     setCurrentStatus(STATUS_MOVING);
                     moveStartTime = event.getEventTime();
-                    moveStartX = actionIndex == pointer1Index ? event.getX(pointer2Index)
+                    moveStart.x = actionIndex == pointer1Index ? event.getX(pointer2Index)
                             : event.getX(pointer1Index);
-                    moveStartY = actionIndex == pointer1Index ? event.getY(pointer2Index)
+                    moveStart.y = actionIndex == pointer1Index ? event.getY(pointer2Index)
                             : event.getY(pointer1Index);
 
                     if (actionIndex == pointer1Index) {
@@ -541,6 +531,8 @@ public class SurfacePainter extends SurfaceView implements SurfaceHolder.Callbac
                 break;
         }
 
+        last.x = x;
+        last.y = y;
         return true;
     }
 
@@ -579,7 +571,7 @@ public class SurfacePainter extends SurfaceView implements SurfaceHolder.Callbac
         float firstFingerX = event.getX(pointer1Index);
         float firstFingerY = event.getY(pointer1Index);
 
-        double firstFingerSpan = Math.hypot(firstFingerX - downX, firstFingerY - downY);
+        double firstFingerSpan = Math.hypot(firstFingerX - down.x, firstFingerY - down.y);
         long timeInterval = eventTime - downTime;
         ViewConfiguration viewConfiguration = ViewConfiguration.get(getContext());
         return STATUS_MOVING == getCurrentStatus()
@@ -610,9 +602,9 @@ public class SurfacePainter extends SurfaceView implements SurfaceHolder.Callbac
      */
     private boolean shouldAdjustCanvas() {
         boolean scale = mCurrentScale > MAX_SCALE || mCurrentScale < MIN_SCALE;
-        boolean border = mCurrentOffsetX > 0 || mCurrentOffsetY > 0
-                || mWidth < coordinateScreen2Canvas(mWidth, mCurrentOffsetX)
-                || mHeight < coordinateScreen2Canvas(mHeight, mCurrentOffsetY);
+        boolean border = mCurrentOffset.x > 0 || mCurrentOffset.y > 0
+                || mWidth < coordinateScreen2Canvas(mWidth, mCurrentOffset.x)
+                || mHeight < coordinateScreen2Canvas(mHeight, mCurrentOffset.y);
         return scale || border;
     }
 
@@ -641,6 +633,32 @@ public class SurfacePainter extends SurfaceView implements SurfaceHolder.Callbac
      */
     public void setOnScaleChangeListener(OnScaleChangeListener listener) {
         mScaleListener = listener;
+    }
+
+    /**
+     * 封装的坐标点
+     */
+    private class Point {
+        Point(float x, float y) {
+            Point.this.x = x;
+            Point.this.y = y;
+        }
+
+        float x;
+        float y;
+    }
+
+    /**
+     * 封装的偏移量
+     */
+    private class Offset {
+        Offset(float x, float y) {
+            Offset.this.x = x;
+            Offset.this.y = y;
+        }
+
+        float x;
+        float y;
     }
 
     /**

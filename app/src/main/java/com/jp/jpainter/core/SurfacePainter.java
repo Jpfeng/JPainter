@@ -7,6 +7,7 @@ import android.graphics.BitmapShader;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.CornerPathEffect;
+import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.PorterDuff;
@@ -89,8 +90,11 @@ public class SurfacePainter extends SurfaceView implements SurfaceHolder.Callbac
 
     private SurfaceHolder mHolder;
     private Canvas mCanvas;
+    private Canvas mDrawCanvas;
     private Paint mPaint;
+    private Paint mDrawPaint;
     private Path mPath;
+    private Bitmap mCache;
 
     private int mHeight;
     private int mWidth;
@@ -125,12 +129,17 @@ public class SurfacePainter extends SurfaceView implements SurfaceHolder.Callbac
 
         mPaint = new Paint();
         mPaint.setAntiAlias(true);
-        mPaint.setStyle(Paint.Style.STROKE);
-        mPaint.setColor(Color.BLACK);
-        mPaint.setStrokeWidth(4.0f);
+        // 缩放时对性能影响很大，暂时禁用
+//        mPaint.setFilterBitmap(true);
+
+        mDrawPaint = new Paint();
+        mDrawPaint.setAntiAlias(true);
+        mDrawPaint.setStyle(Paint.Style.STROKE);
+        mDrawPaint.setColor(Color.BLACK);
+        mDrawPaint.setStrokeWidth(4.0f);
 
         CornerPathEffect effect = new CornerPathEffect(DEFAULT_CORNER_RADIUS);
-        mPaint.setPathEffect(effect);
+        mDrawPaint.setPathEffect(effect);
 
         mPath = new Path();
     }
@@ -150,8 +159,13 @@ public class SurfacePainter extends SurfaceView implements SurfaceHolder.Callbac
         mHeight = height;
         mWidth = width;
 
+        mCache = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
+        mDrawCanvas = new Canvas(mCache);
+        drawPaintBoardBackground(mDrawCanvas);
+
         mCanvas = mHolder.lockCanvas();
-        drawCanvasBackground();
+        drawCanvasBackground(mCanvas);
+        mCanvas.drawBitmap(mCache, 0, 0, mPaint);
         mHolder.unlockCanvasAndPost(mCanvas);
 
         Log.i(this.getClass().getSimpleName(),
@@ -243,11 +257,13 @@ public class SurfacePainter extends SurfaceView implements SurfaceHolder.Callbac
         try {
             mCanvas = mHolder.lockCanvas();
 
-            mCanvas.translate(mCurrentOffset.x, mCurrentOffset.y);
-            mCanvas.scale(mCurrentScale, mCurrentScale);
+            Matrix matrix = new Matrix();
+            matrix.setTranslate(mCurrentOffset.x, mCurrentOffset.y);
+            matrix.postScale(mCurrentScale, mCurrentScale, mCurrentOffset.x, mCurrentOffset.y);
 
-            drawCanvasBackground();
-            mCanvas.drawPath(mPath, mPaint);
+            drawCache();
+            drawCanvasBackground(mCanvas);
+            mCanvas.drawBitmap(mCache, matrix, mPaint);
 
         } catch (Exception e) {
             e.printStackTrace();
@@ -260,24 +276,36 @@ public class SurfacePainter extends SurfaceView implements SurfaceHolder.Callbac
     }
 
     /**
+     * 在缓存上绘制路径。
+     *
+     * 直接在 Bitmap 上重复 drawPath 会产生锯齿。每次绘制路径首先清空 Bitmap ，然后再绘制。
+     * 参考：
+     * https://medium.com/@ali.muzaffar/android-why-your-canvas-shapes-arent-smooth-aa2a3f450eb5
+     */
+    private void drawCache() {
+        drawPaintBoardBackground(mDrawCanvas);
+        mDrawCanvas.drawPath(mPath, mDrawPaint);
+    }
+
+    /**
      * 绘制画布背景。
      */
-    private void drawCanvasBackground() {
+    private void drawCanvasBackground(Canvas canvas) {
         // 平铺灰白格子
         Bitmap bitmap = BitmapFactory.decodeResource(getResources(), R.drawable.canvas_background);
         BitmapShader shader = new BitmapShader(
                 bitmap, Shader.TileMode.REPEAT, Shader.TileMode.REPEAT);
         Paint p = new Paint();
         p.setShader(shader);
-        mCanvas.drawPaint(p);
+        canvas.drawPaint(p);
+    }
 
+    /**
+     * 绘制画板背景。
+     */
+    private void drawPaintBoardBackground(Canvas canvas) {
         // 绘制白色画板
-        Paint paint = new Paint();
-        paint.setAntiAlias(true);
-        paint.setStyle(Paint.Style.FILL);
-        paint.setColor(Color.WHITE);
-        paint.setShadowLayer(8, 0, 0, 0xFF666666);
-        mCanvas.drawRect(0, 0, mWidth, mHeight, paint);
+        canvas.drawColor(Color.WHITE, PorterDuff.Mode.SRC);
     }
 
     private float startScale;

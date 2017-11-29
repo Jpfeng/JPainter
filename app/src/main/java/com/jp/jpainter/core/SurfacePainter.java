@@ -136,7 +136,8 @@ public class SurfacePainter extends SurfaceView implements SurfaceHolder.Callbac
         mDrawPaint.setAntiAlias(true);
         mDrawPaint.setStyle(Paint.Style.STROKE);
         mDrawPaint.setColor(Color.BLACK);
-        mDrawPaint.setStrokeWidth(4.0f);
+        mDrawPaint.setStrokeWidth(8.0f);
+        mDrawPaint.setStrokeCap(Paint.Cap.ROUND);
 
         CornerPathEffect effect = new CornerPathEffect(DEFAULT_CORNER_RADIUS);
         mDrawPaint.setPathEffect(effect);
@@ -181,6 +182,7 @@ public class SurfacePainter extends SurfaceView implements SurfaceHolder.Callbac
     private boolean shouldAdjustCanvas = false;
     private boolean adjustScale = false;
     private int currentAnimateFrame = 0;
+    private boolean needOneMoreFrame = false;
 
     @Override
     public void run() {
@@ -229,6 +231,8 @@ public class SurfacePainter extends SurfaceView implements SurfaceHolder.Callbac
             // 若无任务则将状态置为闲置
             if (STATUS_IDLE != getCurrentStatus() && actionEnd && !shouldAdjustCanvas) {
                 setCurrentStatus(STATUS_IDLE);
+                // 多绘制一帧，避免出现未完整绘制就结束的情况
+                needOneMoreFrame = true;
             }
 
             long end = System.currentTimeMillis();
@@ -251,7 +255,11 @@ public class SurfacePainter extends SurfaceView implements SurfaceHolder.Callbac
      */
     private void drawContent() {
         if (STATUS_IDLE == getCurrentStatus() || STATUS_DESTROYED == getCurrentStatus()) {
-            return;
+            if (needOneMoreFrame) {
+                needOneMoreFrame = false;
+            } else {
+                return;
+            }
         }
 
         try {
@@ -277,7 +285,7 @@ public class SurfacePainter extends SurfaceView implements SurfaceHolder.Callbac
 
     /**
      * 在缓存上绘制路径。
-     *
+     * <p>
      * 直接在 Bitmap 上重复 drawPath 会产生锯齿。每次绘制路径首先清空 Bitmap ，然后再绘制。
      * 参考：
      * https://medium.com/@ali.muzaffar/android-why-your-canvas-shapes-arent-smooth-aa2a3f450eb5
@@ -469,17 +477,20 @@ public class SurfacePainter extends SurfaceView implements SurfaceHolder.Callbac
                     case STATUS_PAINTING:
                         // 只记录首个触摸点的轨迹。判断首个触摸点仍然存在
                         if (isFirstFingerTouching) {
-                            // 根据标记判断是否开始记录。如果将 moveTo(x,y) 方法放在 ACTION_DOWN 中，
+                            // 判断是否开始记录。如果将 moveTo(x,y) 方法放在 ACTION_DOWN 中，
                             // 在缩放时偶尔会出现额外的直线
                             if (!startRecordPath) {
-                                mPath.moveTo(coordinateScreen2Canvas(down.x, mCurrentOffset.x),
-                                        coordinateScreen2Canvas(down.y, mCurrentOffset.y));
-                                startRecordPath = true;
-                            }
+                                startRecordPath = shouldStartRecordPath(event);
+                                if (startRecordPath) {
+                                    mPath.moveTo(coordinateScreen2Canvas(down.x, mCurrentOffset.x),
+                                            coordinateScreen2Canvas(down.y, mCurrentOffset.y));
+                                }
 
-                            // 记录轨迹
-                            mPath.lineTo(coordinateScreen2Canvas(x, mCurrentOffset.x),
-                                    coordinateScreen2Canvas(y, mCurrentOffset.y));
+                            } else {
+                                // 记录轨迹
+                                mPath.lineTo(coordinateScreen2Canvas(x, mCurrentOffset.x),
+                                        coordinateScreen2Canvas(y, mCurrentOffset.y));
+                            }
                         }
                         break;
 
@@ -586,10 +597,19 @@ public class SurfacePainter extends SurfaceView implements SurfaceHolder.Callbac
                 break;
 
             case MotionEvent.ACTION_UP:
+                // 首个触摸点抬起但尚未记录路径，则判断为点击。
+                if (event.getActionIndex() == pointer1Index && !shouldStartRecordPath(event)) {
+                    mPath.moveTo(coordinateScreen2Canvas(down.x, mCurrentOffset.x),
+                            coordinateScreen2Canvas(down.y, mCurrentOffset.y));
+                    mPath.lineTo(coordinateScreen2Canvas(x, mCurrentOffset.x),
+                            coordinateScreen2Canvas(y, mCurrentOffset.y));
+                }
+
                 isFirstFingerTouching = false;
                 actionEnd = true;
                 pointer1Index = -1;
                 pointer2Index = -1;
+
                 // 判断是否需要调整画布
                 shouldAdjustCanvas = shouldAdjustCanvas();
                 if (!shouldAdjustScale()
@@ -632,6 +652,26 @@ public class SurfacePainter extends SurfaceView implements SurfaceHolder.Callbac
     }
 
     /**
+     * 判断是否开始记录路径。当手指触摸时间大于 TapTimeout 或者移动的距离大于 TouchSlop 时
+     *
+     * @param event 传入 MotionEvent
+     * @return true  开始记录
+     * false 不开始记录
+     */
+    private boolean shouldStartRecordPath(MotionEvent event) {
+        long downTime = event.getDownTime();
+        long eventTime = event.getEventTime();
+        float pointerX = event.getX(pointer1Index);
+        float pointerY = event.getY(pointer1Index);
+
+        double fingerSpan = Math.hypot(pointerX - down.x, pointerY - down.y);
+        long timeInterval = eventTime - downTime;
+        ViewConfiguration viewConfiguration = ViewConfiguration.get(getContext());
+        return viewConfiguration.getScaledTouchSlop() < fingerSpan
+                || ViewConfiguration.getTapTimeout() < timeInterval;
+    }
+
+    /**
      * 判断是否进行缩放。当第一个手指触摸时间小于 TapTimeout 并且移动的距离小于 TouchSlop 时，第二个手指按下
      * 即触发缩放。
      *
@@ -650,7 +690,7 @@ public class SurfacePainter extends SurfaceView implements SurfaceHolder.Callbac
         ViewConfiguration viewConfiguration = ViewConfiguration.get(getContext());
         return STATUS_MOVING == getCurrentStatus()
                 || (viewConfiguration.getScaledTouchSlop() > firstFingerSpan
-                && timeInterval < ViewConfiguration.getTapTimeout());
+                && ViewConfiguration.getTapTimeout() > timeInterval);
     }
 
     /**

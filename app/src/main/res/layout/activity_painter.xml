@@ -30,5 +30,25 @@
             android:layout_gravity="center_horizontal|bottom"
             android:background="@android:color/darker_gray"
             android:padding="8dp" />
+
+        <TextView
+            android:id="@+id/tv_undo"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="start|bottom"
+            android:background="@android:color/darker_gray"
+            android:gravity="center"
+            android:padding="8dp"
+            android:text="←" />
+
+        <TextView
+            android:id="@+id/tv_redo"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="end|bottom"
+            android:background="@android:color/darker_gray"
+            android:gravity="center"
+            android:padding="8dp"
+            android:text="→" />
     </FrameLayout>
 </LinearLayout>

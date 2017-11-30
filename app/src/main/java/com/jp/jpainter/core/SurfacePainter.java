@@ -1,5 +1,6 @@
 package com.jp.jpainter.core;
 
+import android.annotation.TargetApi;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -21,6 +22,8 @@ import android.view.ViewConfiguration;
 
 import com.jp.jpainter.R;
 import com.jp.jpainter.utils.LogUtil;
+
+import java.util.ArrayList;
 
 /**
  *
@@ -96,6 +99,10 @@ public class SurfacePainter extends SurfaceView implements SurfaceHolder.Callbac
     private Path mPath;
     private Bitmap mCache;
 
+    // 撤销栈与重做栈
+    private ArrayList<PathData> mUndoStack;
+    private ArrayList<PathData> mRedoStack;
+
     private int mHeight;
     private int mWidth;
     private int mCurrentStatus;
@@ -115,6 +122,12 @@ public class SurfacePainter extends SurfaceView implements SurfaceHolder.Callbac
 
     public SurfacePainter(Context context, AttributeSet attrs, int defStyleAttr) {
         super(context, attrs, defStyleAttr);
+        init();
+    }
+
+    @TargetApi(21)
+    public SurfacePainter(Context context, AttributeSet attrs, int defStyleAttr, int defStyleRes) {
+        super(context, attrs, defStyleAttr, defStyleRes);
         init();
     }
 
@@ -143,6 +156,10 @@ public class SurfacePainter extends SurfaceView implements SurfaceHolder.Callbac
         mDrawPaint.setPathEffect(effect);
 
         mPath = new Path();
+
+        // 初始化撤销栈与重做栈
+        mUndoStack = new ArrayList<>();
+        mRedoStack = new ArrayList<>();
     }
 
     @Override
@@ -292,7 +309,13 @@ public class SurfacePainter extends SurfaceView implements SurfaceHolder.Callbac
      */
     private void drawCache() {
         drawPaintBoardBackground(mDrawCanvas);
-        mDrawCanvas.drawPath(mPath, mDrawPaint);
+//        mDrawCanvas.drawPath(mPath, mDrawPaint);
+        for (PathData path : mUndoStack) {
+            path.draw(mDrawCanvas);
+        }
+        if (!mPath.isEmpty()) {
+            mDrawCanvas.drawPath(mPath, mDrawPaint);
+        }
     }
 
     /**
@@ -605,6 +628,11 @@ public class SurfacePainter extends SurfaceView implements SurfaceHolder.Callbac
                             coordinateScreen2Canvas(y, mCurrentOffset.y));
                 }
 
+                // 将路径加入撤销栈，清空重做栈，清空路径
+                mUndoStack.add(new PathData(new Paint(mDrawPaint), new Path(mPath)));
+                mRedoStack.clear();
+                mPath.rewind();
+
                 isFirstFingerTouching = false;
                 actionEnd = true;
                 pointer1Index = -1;
@@ -749,6 +777,48 @@ public class SurfacePainter extends SurfaceView implements SurfaceHolder.Callbac
      */
     public int getCurrentStatus() {
         return mCurrentStatus;
+    }
+
+    /**
+     * 当前是否可撤销
+     *
+     * @return true 可撤销
+     * false 不可撤销
+     */
+    public boolean canUndo() {
+        return mUndoStack.size() > 0;
+    }
+
+    /**
+     * 当前是否可重做
+     *
+     * @return true 可重做
+     * false 不可重做
+     */
+    public boolean canRedo() {
+        return mRedoStack.size() > 0;
+    }
+
+    /**
+     * 撤销上一步操作
+     */
+    public void undo() {
+        if (0 < mUndoStack.size()) {
+            PathData data = mUndoStack.remove(mUndoStack.size() - 1);
+            mRedoStack.add(data);
+            needOneMoreFrame = true;
+        }
+    }
+
+    /**
+     * 重做撤销的操作
+     */
+    public void redo() {
+        if (0 < mRedoStack.size()) {
+            PathData data = mRedoStack.remove(mRedoStack.size() - 1);
+            mUndoStack.add(data);
+            needOneMoreFrame = true;
+        }
     }
 
     /**

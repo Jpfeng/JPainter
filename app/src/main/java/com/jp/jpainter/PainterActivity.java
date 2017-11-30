@@ -13,9 +13,15 @@ public class PainterActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_painter);
 
+        TextView tvUndo = findViewById(R.id.tv_undo);
+        TextView tvRedo = findViewById(R.id.tv_redo);
         TextView tvScale = findViewById(R.id.tv_scale);
-        SurfacePainter painter = findViewById(R.id.sp_painter);
         tvScale.setText("1.0x");
+
+        SurfacePainter painter = findViewById(R.id.sp_painter);
+
+        tvUndo.setOnClickListener(v -> painter.undo());
+        tvRedo.setOnClickListener(v -> painter.redo());
 
         painter.setOnScaleChangeListener(new SurfacePainter.OnScaleChangeListener() {
             @Override

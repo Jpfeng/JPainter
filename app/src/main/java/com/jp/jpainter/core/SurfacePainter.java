@@ -21,6 +21,9 @@ import android.view.SurfaceView;
 import android.view.ViewConfiguration;
 
 import com.jp.jpainter.R;
+import com.jp.jpainter.core.entity.Offset;
+import com.jp.jpainter.core.entity.PathData;
+import com.jp.jpainter.core.entity.Point;
 import com.jp.jpainter.utils.LogUtil;
 
 import java.util.ArrayList;
@@ -828,32 +831,6 @@ public class SurfacePainter extends SurfaceView implements SurfaceHolder.Callbac
      */
     public void setOnScaleChangeListener(OnScaleChangeListener listener) {
         mScaleListener = listener;
-    }
-
-    /**
-     * 封装的坐标点
-     */
-    private class Point {
-        Point(float x, float y) {
-            Point.this.x = x;
-            Point.this.y = y;
-        }
-
-        float x;
-        float y;
-    }
-
-    /**
-     * 封装的偏移量
-     */
-    private class Offset {
-        Offset(float x, float y) {
-            Offset.this.x = x;
-            Offset.this.y = y;
-        }
-
-        float x;
-        float y;
     }
 
     /**

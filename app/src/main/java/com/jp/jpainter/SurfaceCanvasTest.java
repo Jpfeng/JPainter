@@ -1,4 +1,4 @@
-package com.jp.jpainter.core;
+package com.jp.jpainter;
 
 import android.content.Context;
 import android.graphics.Bitmap;
@@ -15,8 +15,18 @@ import android.util.AttributeSet;
 import android.view.MotionEvent;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
+import android.view.VelocityTracker;
+import android.view.View;
+import android.view.ViewConfiguration;
 
-import com.jp.jpainter.R;
+import com.jp.jcanvas.CanvasGestureDetector;
+import com.jp.jcanvas.CanvasGestureDetector.OnCanvasGestureListener;
+import com.jp.jcanvas.entity.Offset;
+import com.jp.jcanvas.entity.Point;
+import com.jp.jcanvas.entity.Scale;
+import com.jp.jcanvas.entity.Velocity;
+import com.jp.jpainter.core.entity.PathData;
+import com.jp.jpainter.utils.LogUtil;
 
 import java.util.ArrayList;
 
@@ -43,6 +53,7 @@ public class SurfaceCanvasTest extends SurfaceView implements SurfaceHolder.Call
     // SurfaceHolder
     private SurfaceHolder mHolder;
     private boolean mIsDrawing;
+    private CanvasGestureDetector gestureDetector;
 
     public SurfaceCanvasTest(Context context) {
         this(context, null);
@@ -68,6 +79,7 @@ public class SurfaceCanvasTest extends SurfaceView implements SurfaceHolder.Call
         mPaint.setStyle(Paint.Style.STROKE);
         mPaint.setColor(Color.BLACK);
         mPaint.setStrokeWidth(8.0f);
+        mPaint.setStrokeCap(Paint.Cap.ROUND);
 
         CornerPathEffect effect = new CornerPathEffect(30);
         mPaint.setPathEffect(effect);
@@ -76,33 +88,126 @@ public class SurfaceCanvasTest extends SurfaceView implements SurfaceHolder.Call
 
         mUndoStack = new ArrayList<>();
         mRedoStack = new ArrayList<>();
+
+        gestureDetector = new CanvasGestureDetector(getContext(), new OnCanvasGestureListener() {
+            @Override
+            public boolean onActionDown(Point down) {
+                LogUtil.d("gestureDetector -> ", "onActionDown(" + down.x + ", " + down.y + ")");
+                return true;
+            }
+
+            @Override
+            public boolean onDrawPath(Path path) {
+                mPath.set(path);
+                return true;
+            }
+
+            @Override
+            public boolean onScaleStart(Point pivot) {
+                LogUtil.d("gestureDetector -> ", "onScaleStart(" + pivot.x + ", " + pivot.y + ")");
+                return false;
+            }
+
+            @Override
+            public boolean onScale(Point pivot, Scale scale, Offset offset) {
+                return false;
+            }
+
+            @Override
+            public boolean onScaleEnd(Point pivot) {
+                return false;
+            }
+
+            @Override
+            public boolean onMove(Point focus, Offset offset) {
+                return false;
+            }
+
+            @Override
+            public boolean onActionUp(Point focus, boolean fling, Velocity velocity) {
+                LogUtil.d("gestureDetector -> ", "onActionUp()");
+                return true;
+            }
+        });
+
+        setOnTouchListener(new OnTouchListener() {
+            @Override
+            public boolean onTouch(View v, MotionEvent event) {
+                gestureDetector.onTouchEvent(event);
+                return true;
+            }
+        });
     }
 
     private Path mPath;
 
+    private VelocityTracker vTracker;
+
     @Override
     public boolean onTouchEvent(MotionEvent event) {
-        float x = event.getX();
-        float y = event.getY();
 
-        switch (event.getAction()) {
-            case MotionEvent.ACTION_DOWN:
-                mPath.moveTo(x, y);
-                break;
-
-            case MotionEvent.ACTION_MOVE:
-                mPath.lineTo(x, y);
-                break;
-
-            case MotionEvent.ACTION_UP:
-                mUndoStack.add(new PathData(mPaint, new Path(mPath)));
-                mRedoStack.clear();
-                mPath.reset();
-                break;
+        if (null == vTracker) {
+            vTracker = VelocityTracker.obtain();
         }
+
+        vTracker.addMovement(event);
+
+        vTracker.computeCurrentVelocity(1000, ViewConfiguration.getMaximumFlingVelocity());
+        float velocityX = vTracker.getXVelocity();
+        float velocityY = vTracker.getYVelocity();
+        float v = (float) Math.hypot(velocityX, velocityY);
+
+        LogUtil.d("vTracker -> ", "V(" + velocityX + ", " + velocityY + ")" + v);
+
+
+//        vTracker.
+
+        final int count = event.getPointerCount();
+//        vTracker.computeCurrentVelocity(1000);
+//        final int upIndex = event.getActionIndex();
+//        final int id1 = event.getPointerId(upIndex);
+//        final float x1 = vTracker.getXVelocity(id1);
+//        final float y1 = vTracker.getYVelocity(id1);
+//        for (int i = 0; i < count; i++) {
+//            if (i == upIndex) continue;
+//
+//            final int id2 = event.getPointerId(i);
+//            final float x = x1 * vTracker.getXVelocity(id2);
+//            final float y = y1 * vTracker.getYVelocity(id2);
+
+//                final float dot = x + y;
+//                if (dot < 0) {
+//                    vTracker.clear();
+//                    break;
+//                }
+//        }
 
         return true;
     }
+
+    //    @Override
+//    public boolean onTouchEvent(MotionEvent event) {
+//        float x = event.getX();
+//        float y = event.getY();
+//
+//        switch (event.getAction()) {
+//            case MotionEvent.ACTION_DOWN:
+//                mPath.moveTo(x, y);
+//                break;
+//
+//            case MotionEvent.ACTION_MOVE:
+//                mPath.lineTo(x, y);
+//                break;
+//
+//            case MotionEvent.ACTION_UP:
+//                mUndoStack.add(new PathData(mPaint, new Path(mPath)));
+//                mRedoStack.clear();
+//                mPath.reset();
+//                break;
+//        }
+//
+//        return true;
+//    }
 
     @Override
     public void surfaceCreated(SurfaceHolder holder) {

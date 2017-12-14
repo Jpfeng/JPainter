@@ -30,7 +30,12 @@ public class Scale implements Parcelable {
 
     public void set(float scale, Point pivot) {
         this.factor = scale;
-        this.pivot = pivot;
+        this.pivot.set(pivot);
+    }
+
+    public void set(Scale scale) {
+        this.factor = scale.factor;
+        this.pivot.set(scale.pivot);
     }
 
     public final boolean equals(float scale, Point pivot) {

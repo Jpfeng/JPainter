@@ -33,6 +33,11 @@ public class Point implements Parcelable {
         this.y = y;
     }
 
+    public void set(Point p) {
+        this.x = p.x;
+        this.y = p.y;
+    }
+
     public final boolean equals(float x, float y) {
         return this.x == x && this.y == y;
     }

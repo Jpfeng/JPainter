@@ -4,7 +4,7 @@ import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.widget.TextView;
 
-import com.jp.jpainter.core.SurfacePainter;
+import com.jp.jcanvas.JCanvas;
 
 public class PainterActivity extends AppCompatActivity {
 
@@ -18,12 +18,12 @@ public class PainterActivity extends AppCompatActivity {
         TextView tvScale = findViewById(R.id.tv_scale);
         tvScale.setText("1.0x");
 
-        SurfaceCanvasTest painter = findViewById(R.id.sp_painter);
+        JCanvas painter = findViewById(R.id.sp_painter);
 
         tvUndo.setOnClickListener(v -> painter.undo());
         tvRedo.setOnClickListener(v -> painter.redo());
 
-//        painter.setOnScaleChangeListener(new SurfacePainter.OnScaleChangeListener() {
+//        painter.setOnScaleChangeListener(new JCanvas.OnScaleChangeListener() {
 //            @Override
 //            public void onScaleChangeStart(float startScale) {
 //                tvScale.setText(

@@ -103,29 +103,30 @@ public class SurfaceCanvasTest extends SurfaceView implements SurfaceHolder.Call
             }
 
             @Override
-            public boolean onScaleStart(Point pivot) {
+            public void onScaleStart(Point pivot) {
                 LogUtil.d("gestureDetector -> ", "onScaleStart(" + pivot.x + ", " + pivot.y + ")");
+            }
+
+            @Override
+            public boolean onScale(Scale scale, Offset offset) {
+                LogUtil.d("gestureDetector -> ", "onScale(" + scale.factor + ", " + offset.x + ", " + offset.y + ")");
                 return false;
             }
 
             @Override
-            public boolean onScale(Point pivot, Scale scale, Offset offset) {
-                return false;
-            }
-
-            @Override
-            public boolean onScaleEnd(Point pivot) {
-                return false;
+            public void onScaleEnd(Point pivot) {
+                LogUtil.d("gestureDetector -> ", "onScaleEnd(" + pivot.x + ", " + pivot.y + ")");
             }
 
             @Override
             public boolean onMove(Point focus, Offset offset) {
-                return false;
+                LogUtil.d("gestureDetector -> ", "onMove(" + offset.x + ", " + offset.y + ")");
+                return true;
             }
 
             @Override
             public boolean onActionUp(Point focus, boolean fling, Velocity velocity) {
-                LogUtil.d("gestureDetector -> ", "onActionUp()");
+                LogUtil.d("gestureDetector -> ", "onActionUp(" + fling + ", " + velocity.x + ", " + velocity.y + ")");
                 return true;
             }
         });
@@ -133,81 +134,12 @@ public class SurfaceCanvasTest extends SurfaceView implements SurfaceHolder.Call
         setOnTouchListener(new OnTouchListener() {
             @Override
             public boolean onTouch(View v, MotionEvent event) {
-                gestureDetector.onTouchEvent(event);
-                return true;
+                return gestureDetector.onTouchEvent(event);
             }
         });
     }
 
     private Path mPath;
-
-    private VelocityTracker vTracker;
-
-    @Override
-    public boolean onTouchEvent(MotionEvent event) {
-
-        if (null == vTracker) {
-            vTracker = VelocityTracker.obtain();
-        }
-
-        vTracker.addMovement(event);
-
-        vTracker.computeCurrentVelocity(1000, ViewConfiguration.getMaximumFlingVelocity());
-        float velocityX = vTracker.getXVelocity();
-        float velocityY = vTracker.getYVelocity();
-        float v = (float) Math.hypot(velocityX, velocityY);
-
-        LogUtil.d("vTracker -> ", "V(" + velocityX + ", " + velocityY + ")" + v);
-
-
-//        vTracker.
-
-        final int count = event.getPointerCount();
-//        vTracker.computeCurrentVelocity(1000);
-//        final int upIndex = event.getActionIndex();
-//        final int id1 = event.getPointerId(upIndex);
-//        final float x1 = vTracker.getXVelocity(id1);
-//        final float y1 = vTracker.getYVelocity(id1);
-//        for (int i = 0; i < count; i++) {
-//            if (i == upIndex) continue;
-//
-//            final int id2 = event.getPointerId(i);
-//            final float x = x1 * vTracker.getXVelocity(id2);
-//            final float y = y1 * vTracker.getYVelocity(id2);
-
-//                final float dot = x + y;
-//                if (dot < 0) {
-//                    vTracker.clear();
-//                    break;
-//                }
-//        }
-
-        return true;
-    }
-
-    //    @Override
-//    public boolean onTouchEvent(MotionEvent event) {
-//        float x = event.getX();
-//        float y = event.getY();
-//
-//        switch (event.getAction()) {
-//            case MotionEvent.ACTION_DOWN:
-//                mPath.moveTo(x, y);
-//                break;
-//
-//            case MotionEvent.ACTION_MOVE:
-//                mPath.lineTo(x, y);
-//                break;
-//
-//            case MotionEvent.ACTION_UP:
-//                mUndoStack.add(new PathData(mPaint, new Path(mPath)));
-//                mRedoStack.clear();
-//                mPath.reset();
-//                break;
-//        }
-//
-//        return true;
-//    }
 
     @Override
     public void surfaceCreated(SurfaceHolder holder) {

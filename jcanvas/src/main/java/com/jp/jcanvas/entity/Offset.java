@@ -33,6 +33,11 @@ public class Offset implements Parcelable {
         this.y = y;
     }
 
+    public void set(Offset offset) {
+        this.x = offset.x;
+        this.y = offset.y;
+    }
+
     public final boolean equals(float x, float y) {
         return this.x == x && this.y == y;
     }

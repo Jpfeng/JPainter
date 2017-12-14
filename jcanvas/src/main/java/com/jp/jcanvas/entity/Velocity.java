@@ -33,6 +33,11 @@ public class Velocity implements Parcelable {
         this.y = y;
     }
 
+    public void set(Velocity v) {
+        this.x = v.x;
+        this.y = v.y;
+    }
+
     public final boolean equals(float x, float y) {
         return this.x == x && this.y == y;
     }

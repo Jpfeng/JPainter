@@ -18,7 +18,7 @@
         android:layout_height="match_parent"
         android:layout_weight="1">
 
-        <com.jp.jpainter.SurfaceCanvasTest
+        <com.jp.jcanvas.JCanvas
             android:id="@+id/sp_painter"
             android:layout_width="match_parent"
             android:layout_height="match_parent" />

@@ -42,7 +42,7 @@ public class CanvasGestureDetector {
     private Point mDown;
     private Point mPivot;
     private Point mMoveLast;
-    private float mSpanLast = 0f;
+    private float mSpanLast;
     private Velocity mPivotVelocity;
     private Path mPath;
 
@@ -244,7 +244,7 @@ public class CanvasGestureDetector {
                     handled = mListener.onDrawPath(mPath);
                 }
 
-                mPath.rewind();
+                mPath.reset();
                 mIsFirstPointerTouching = false;
                 mFirstPointerId = -1;
 
@@ -291,7 +291,7 @@ public class CanvasGestureDetector {
     private void cancel() {
         mHandler.removeMessages(START_DRAW);
         mHandler.removeMessages(START_MOVE);
-        mPath.rewind();
+        mPath.reset();
         mVelocityTracker.recycle();
         mVelocityTracker = null;
         mIsFirstPointerTouching = false;
@@ -372,7 +372,7 @@ public class CanvasGestureDetector {
 
         void onScaleStart(Point pivot);
 
-        boolean onScale(Scale scale, Offset offset);
+        boolean onScale(Scale scale, Offset pivotOffset);
 
         void onScaleEnd(Point pivot);
 

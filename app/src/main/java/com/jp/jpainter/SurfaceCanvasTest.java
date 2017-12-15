@@ -108,8 +108,8 @@ public class SurfaceCanvasTest extends SurfaceView implements SurfaceHolder.Call
             }
 
             @Override
-            public boolean onScale(Scale scale, Offset offset) {
-                LogUtil.d("gestureDetector -> ", "onScale(" + scale.factor + ", " + offset.x + ", " + offset.y + ")");
+            public boolean onScale(Scale scale, Offset pivotOffset) {
+                LogUtil.d("gestureDetector -> ", "onScale(" + scale.factor + ", " + pivotOffset.x + ", " + pivotOffset.y + ")");
                 return false;
             }
 

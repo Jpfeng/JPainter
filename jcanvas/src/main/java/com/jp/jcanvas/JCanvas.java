@@ -269,17 +269,15 @@ public class JCanvas extends SurfaceView implements
     @Override
     public boolean onScale(Scale scale, Offset pivotOffset) {
         float newScale = mScale * scale.factor;
-        float f = scale.factor;
 
         // limit scale
         if (newScale > mMaxScale) {
             newScale = mMaxScale;
-            f = 1.0f;
         } else if (newScale < mMinScale) {
             newScale = mMinScale;
-            f = 1.0f;
         }
 
+        float f = newScale / mScale;
         mScale = newScale;
 
         float newOffsetX = mOffset.x - (f - 1.0f) * (scale.pivot.x - mOffset.x) + pivotOffset.x;

@@ -13,6 +13,7 @@ import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.PorterDuff;
 import android.graphics.Shader;
+import android.support.annotation.ColorInt;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.view.MotionEvent;
@@ -65,30 +66,15 @@ public class JCanvas extends SurfaceView implements
      */
     private static final int STATUS_DESTROYED = 5;
 
-    /**
-     * 每秒帧率。
-     */
-    private static final int FRAME_RATE = 60;
+    private int mFrameTime;
+    private float mMinScale;
+    private float mMaxScale;
 
-    /**
-     * 每一帧的时间。
-     */
-    private static final int FRAME_TIME_MILLIS = (int) (1000 / FRAME_RATE);
-
-    /**
-     * 默认笔迹圆滑半径
-     */
-    private static final int DEFAULT_CORNER_RADIUS = 30;
-
-    /**
-     * 最小缩放倍率
-     */
-    private static final float MIN_SCALE = 1.0f;
-
-    /**
-     * 最大缩放倍率
-     */
-    private static final float MAX_SCALE = 4.0f;
+    private float mCornerRadius;
+    private float mPaintWidth;
+    @ColorInt
+    private int mPaintColor;
+    private Paint.Cap mPaintCap;
 
     private SurfaceHolder mHolder;
     private Canvas mCanvas;
@@ -100,12 +86,11 @@ public class JCanvas extends SurfaceView implements
 
     private int mHeight;
     private int mWidth;
-    private int mStatus;
-    private boolean mNeedInvalidate;
-
     private float mScale;
     private Offset mOffset;
     private Matrix mMatrix;
+    private int mStatus;
+    private boolean mNeedInvalidate;
 
     private Scroller mScroller;
 
@@ -141,6 +126,14 @@ public class JCanvas extends SurfaceView implements
         setFocusable(true);
         setFocusableInTouchMode(true);
 
+        mFrameTime = DefaultValue.FRAME_TIME_MILLIS;
+        mCornerRadius = DefaultValue.CORNER_RADIUS;
+        mPaintWidth = DefaultValue.PAINT_WIDTH;
+        mPaintColor = DefaultValue.PAINT_COLOR;
+        mPaintCap = DefaultValue.PAINT_CAP;
+        mMinScale = DefaultValue.MIN_SCALE;
+        mMaxScale = DefaultValue.MAX_SCALE;
+
         mPaint = new Paint();
         mPaint.setAntiAlias(true);
         // 缩放时对性能影响很大，暂时禁用
@@ -149,11 +142,11 @@ public class JCanvas extends SurfaceView implements
         mDrawPaint = new Paint();
         mDrawPaint.setAntiAlias(true);
         mDrawPaint.setStyle(Paint.Style.STROKE);
-        mDrawPaint.setColor(Color.BLACK);
-        mDrawPaint.setStrokeWidth(8.0f);
-        mDrawPaint.setStrokeCap(Paint.Cap.ROUND);
+        setPaintColor(mPaintColor);
+        setPaintWidth(mPaintWidth);
+        mDrawPaint.setStrokeCap(mPaintCap);
 
-        CornerPathEffect effect = new CornerPathEffect(DEFAULT_CORNER_RADIUS);
+        CornerPathEffect effect = new CornerPathEffect(mCornerRadius);
         mDrawPaint.setPathEffect(effect);
 
         mPath = new Path();
@@ -279,11 +272,11 @@ public class JCanvas extends SurfaceView implements
         float f = scale.factor;
 
         // limit scale
-        if (newScale > MAX_SCALE) {
-            newScale = MAX_SCALE;
+        if (newScale > mMaxScale) {
+            newScale = mMaxScale;
             f = 1.0f;
-        } else if (newScale < MIN_SCALE) {
-            newScale = MIN_SCALE;
+        } else if (newScale < mMinScale) {
+            newScale = mMinScale;
             f = 1.0f;
         }
 
@@ -400,9 +393,9 @@ public class JCanvas extends SurfaceView implements
             long end = System.currentTimeMillis();
 
             long time = end - start;
-            if (time < FRAME_TIME_MILLIS) {
+            if (time < mFrameTime) {
                 try {
-                    Thread.sleep(FRAME_TIME_MILLIS - time);
+                    Thread.sleep(mFrameTime - time);
 
                 } catch (InterruptedException e) {
                     e.printStackTrace();
@@ -411,6 +404,9 @@ public class JCanvas extends SurfaceView implements
         }
     }
 
+    /**
+     * 绘制内容
+     */
     private void drawContent() {
         try {
             mCanvas = mHolder.lockCanvas();
@@ -470,6 +466,11 @@ public class JCanvas extends SurfaceView implements
         canvas.drawColor(Color.WHITE, PorterDuff.Mode.SRC);
     }
 
+    /**
+     * 设置状态
+     *
+     * @param status 状态
+     */
     public void setStatus(int status) {
         mStatus = status;
         // 当设置为 STATUS_IDLE 时，很大可能绘制线程仍在绘制上一帧。
@@ -480,8 +481,71 @@ public class JCanvas extends SurfaceView implements
         }
     }
 
+    /**
+     * 获取当前状态
+     *
+     * @return 当前状态
+     */
     public int getStatus() {
         return mStatus;
+    }
+
+    /**
+     * 设置画笔颜色
+     *
+     * @param color 画笔颜色
+     */
+    public void setPaintColor(@ColorInt int color) {
+        mPaintColor = color;
+        mDrawPaint.setColor(color);
+    }
+
+    /**
+     * 获取当前画笔颜色
+     *
+     * @return 画笔颜色
+     */
+    public @ColorInt
+    int getPaintColor() {
+        return mPaintColor;
+    }
+
+    /**
+     * 设置画笔宽度
+     *
+     * @param width 画笔宽度
+     */
+    public void setPaintWidth(float width) {
+        mPaintWidth = width;
+        mDrawPaint.setStrokeWidth(mPaintWidth);
+    }
+
+    /**
+     * 获取当前画笔宽度
+     *
+     * @return 画笔宽度
+     */
+    public float getPaintWidth() {
+        return mPaintWidth;
+    }
+
+    /**
+     * 设置画笔笔头形状
+     *
+     * @param cap 笔头形状
+     */
+    public void setPaintCap(Paint.Cap cap) {
+        mPaintCap = cap;
+        mDrawPaint.setStrokeCap(cap);
+    }
+
+    /**
+     * 获取当前画笔笔头形状
+     *
+     * @return 笔头形状
+     */
+    public Paint.Cap getPaintCap() {
+        return mPaintCap;
     }
 
     /**

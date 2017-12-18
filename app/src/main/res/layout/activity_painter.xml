@@ -6,11 +6,77 @@
     android:orientation="horizontal"
     tools:context="com.jp.jpainter.PainterActivity">
 
-    <TextView
+    <ScrollView
         android:layout_width="?android:attr/actionBarSize"
         android:layout_height="match_parent"
-        android:background="@android:color/darker_gray"
-        android:text="工具栏" />
+        android:background="@android:color/black">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@android:color/darker_gray"
+                android:text="工具栏" />
+
+            <TextView
+                android:id="@+id/tv_scale"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:background="@android:color/darker_gray"
+                android:gravity="center"
+                android:paddingBottom="8dp"
+                android:paddingTop="8dp" />
+
+            <TextView
+                android:id="@+id/tv_undo"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:background="@android:color/darker_gray"
+                android:gravity="center"
+                android:paddingBottom="8dp"
+                android:paddingTop="8dp"
+                android:text="←" />
+
+            <TextView
+                android:id="@+id/tv_redo"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:background="@android:color/darker_gray"
+                android:gravity="center"
+                android:paddingBottom="8dp"
+                android:paddingTop="8dp"
+                android:text="→" />
+
+            <TextView
+                android:id="@+id/tv_width"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:background="@android:color/darker_gray"
+                android:gravity="center"
+                android:paddingBottom="8dp"
+                android:paddingTop="8dp"
+                android:text="大小" />
+
+            <TextView
+                android:id="@+id/tv_color"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:background="@android:color/darker_gray"
+                android:gravity="center"
+                android:paddingBottom="8dp"
+                android:paddingTop="8dp"
+                android:text="颜色" />
+        </LinearLayout>
+    </ScrollView>
 
     <FrameLayout
         android:id="@+id/fl_painter_container"
@@ -22,33 +88,5 @@
             android:id="@+id/sp_painter"
             android:layout_width="match_parent"
             android:layout_height="match_parent" />
-
-        <TextView
-            android:id="@+id/tv_scale"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center_horizontal|bottom"
-            android:background="@android:color/darker_gray"
-            android:padding="8dp" />
-
-        <TextView
-            android:id="@+id/tv_undo"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="start|bottom"
-            android:background="@android:color/darker_gray"
-            android:gravity="center"
-            android:padding="8dp"
-            android:text="←" />
-
-        <TextView
-            android:id="@+id/tv_redo"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="end|bottom"
-            android:background="@android:color/darker_gray"
-            android:gravity="center"
-            android:padding="8dp"
-            android:text="→" />
     </FrameLayout>
 </LinearLayout>

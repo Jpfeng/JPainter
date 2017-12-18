@@ -1,12 +1,21 @@
 package com.jp.jpainter;
 
+import android.graphics.Color;
 import android.os.Bundle;
+import android.support.annotation.ColorInt;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
+import android.widget.LinearLayout;
+import android.widget.SeekBar;
 import android.widget.TextView;
 
 import com.jp.jcanvas.JCanvas;
 
 public class PainterActivity extends AppCompatActivity {
+
+    private int mPaintWidth;
+    @ColorInt
+    private int mPaintColor;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -16,12 +25,90 @@ public class PainterActivity extends AppCompatActivity {
         TextView tvUndo = findViewById(R.id.tv_undo);
         TextView tvRedo = findViewById(R.id.tv_redo);
         TextView tvScale = findViewById(R.id.tv_scale);
+        TextView tvColor = findViewById(R.id.tv_color);
+        TextView tvWidth = findViewById(R.id.tv_width);
+        JCanvas painter = findViewById(R.id.sp_painter);
         tvScale.setText("1.0x");
 
-        JCanvas painter = findViewById(R.id.sp_painter);
 
         tvUndo.setOnClickListener(v -> painter.undo());
         tvRedo.setOnClickListener(v -> painter.redo());
+
+        tvColor.setOnClickListener(v -> {
+            TextView tvRed = new TextView(getApplicationContext());
+            tvRed.setText("  红  ");
+            tvRed.setTextSize(18.0f);
+            tvRed.setOnClickListener(view -> mPaintColor = Color.RED);
+            TextView tvGreen = new TextView(getApplicationContext());
+            tvGreen.setText("  绿  ");
+            tvGreen.setTextSize(18.0f);
+            tvGreen.setOnClickListener(view -> mPaintColor = Color.GREEN);
+            TextView tvBlue = new TextView(getApplicationContext());
+            tvBlue.setText("  蓝  ");
+            tvBlue.setTextSize(18.0f);
+            tvBlue.setOnClickListener(view -> mPaintColor = Color.BLUE);
+            TextView tvYellow = new TextView(getApplicationContext());
+            tvYellow.setText("  黄  ");
+            tvYellow.setTextSize(18.0f);
+            tvYellow.setOnClickListener(view -> mPaintColor = Color.YELLOW);
+            TextView tvGray = new TextView(getApplicationContext());
+            tvGray.setText("  灰  ");
+            tvGray.setTextSize(18.0f);
+            tvGray.setOnClickListener(view -> mPaintColor = Color.GRAY);
+            TextView tvBlack = new TextView(getApplicationContext());
+            tvBlack.setText("  黑  ");
+            tvBlack.setTextSize(18.0f);
+            tvBlack.setOnClickListener(view -> mPaintColor = Color.BLACK);
+
+            LinearLayout ll = new LinearLayout(getApplicationContext());
+            ll.setOrientation(LinearLayout.HORIZONTAL);
+            ll.addView(tvRed);
+            ll.addView(tvGreen);
+            ll.addView(tvBlue);
+            ll.addView(tvYellow);
+            ll.addView(tvGray);
+            ll.addView(tvBlack);
+
+            new AlertDialog.Builder(this)
+                    .setTitle("设置画笔颜色")
+                    .setView(ll)
+                    .setPositiveButton("ok", (dialog, which) -> {
+                        painter.setPaintColor(mPaintColor);
+                    })
+                    .setNegativeButton("no", null)
+                    .create()
+                    .show();
+        });
+
+        tvWidth.setOnClickListener(v -> {
+            SeekBar seekBar = new SeekBar(getApplicationContext());
+            seekBar.setMax(99);
+            seekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+                @Override
+                public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+                    mPaintWidth = progress;
+                }
+
+                @Override
+                public void onStartTrackingTouch(SeekBar seekBar) {
+                }
+
+                @Override
+                public void onStopTrackingTouch(SeekBar seekBar) {
+                }
+            });
+            seekBar.setProgress((int) painter.getPaintWidth());
+
+            new AlertDialog.Builder(this)
+                    .setTitle("设置笔尖大小")
+                    .setView(seekBar)
+                    .setPositiveButton("ok", (dialog, which) -> {
+                        painter.setPaintWidth(mPaintWidth);
+                    })
+                    .setNegativeButton("no", null)
+                    .create()
+                    .show();
+        });
 
         painter.setOnScaleChangeListener(new JCanvas.OnScaleChangeListener() {
             @Override
@@ -38,6 +125,8 @@ public class PainterActivity extends AppCompatActivity {
 
             @Override
             public void onScaleChangeEnd(float endScale) {
+                tvScale.setText(
+                        String.valueOf((float) (Math.round(endScale * 10)) / 10).concat("x"));
             }
         });
     }

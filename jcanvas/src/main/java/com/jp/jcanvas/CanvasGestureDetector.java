@@ -240,8 +240,8 @@ public class CanvasGestureDetector {
                 if (pointerId == mFirstPointerId
                         && (!mIsDrawing && !mIsScaling && !mIsMoving)) {
                     mIsDrawing = true;
-                    mPath.lineTo(event.getX(mFirstPointerId), event.getY(mFirstPointerId));
-                    handled = mListener.onDrawPath(mPath);
+                    handled = mListener.onSingleTapUp(new Point(event.getX(mFirstPointerId),
+                            event.getY(mFirstPointerId)));
                 }
 
                 mPath.reset();
@@ -367,6 +367,8 @@ public class CanvasGestureDetector {
 
     public interface OnCanvasGestureListener {
         boolean onActionDown(Point down);
+
+        boolean onSingleTapUp(Point focus);
 
         boolean onDrawPath(final Path path);
 

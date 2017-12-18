@@ -97,6 +97,11 @@ public class SurfaceCanvasTest extends SurfaceView implements SurfaceHolder.Call
             }
 
             @Override
+            public boolean onSingleTapUp(Point focus) {
+                return false;
+            }
+
+            @Override
             public boolean onDrawPath(Path path) {
                 mPath.set(path);
                 return true;

@@ -48,22 +48,22 @@ public class JCanvas extends SurfaceView implements
     /**
      * 缩放状态。用户产生交互且正在缩放视图。
      */
-    private static final int STATUS_SCALING = 3;
+    private static final int STATUS_SCALING = 2;
 
     /**
      * 移动状态。用户产生交互且正在移动视图。
      */
-    private static final int STATUS_MOVING = 4;
+    private static final int STATUS_MOVING = 3;
 
     /**
      * 动画状态。无交互但正在显示动画。
      */
-    private static final int STATUS_FLING = 5;
+    private static final int STATUS_FLING = 4;
 
     /**
      * 销毁状态。SurfaceView 已被销毁。
      */
-    private static final int STATUS_DESTROYED = 6;
+    private static final int STATUS_DESTROYED = 5;
 
     /**
      * 每秒帧率。
@@ -101,6 +101,7 @@ public class JCanvas extends SurfaceView implements
     private int mHeight;
     private int mWidth;
     private int mStatus;
+    private boolean mNeedInvalidate;
 
     private float mScale;
     private Offset mOffset;
@@ -167,25 +168,16 @@ public class JCanvas extends SurfaceView implements
         mUndoStack = new ArrayList<>();
         mRedoStack = new ArrayList<>();
 
+        mNeedInvalidate = false;
+
         setStatus(STATUS_DESTROYED);
 
         CanvasGestureDetector gDetector = new CanvasGestureDetector(getContext(), this);
         setOnTouchListener((v, event) -> {
             boolean handled = false;
 
-            switch (event.getAction()) {
-                case MotionEvent.ACTION_DOWN:
-                    if (STATUS_FLING == getStatus()) {
-                        mScroller.abortAnimation();
-                        mLastScrX = 0;
-                        mLastScrY = 0;
-                        setStatus(STATUS_IDLE);
-                    }
-                    break;
-
-                case MotionEvent.ACTION_UP:
-                    handled = performClick();
-                    break;
+            if (MotionEvent.ACTION_UP == event.getAction()) {
+                handled = performClick();
             }
 
             return handled | gDetector.onTouchEvent(event);
@@ -225,8 +217,37 @@ public class JCanvas extends SurfaceView implements
         setStatus(STATUS_DESTROYED);
     }
 
+    private Point mDown;
+    private boolean mAbortFling;
+
     @Override
     public boolean onActionDown(Point down) {
+        if (STATUS_FLING == getStatus()) {
+            mScroller.abortAnimation();
+            mLastScrX = 0;
+            mLastScrY = 0;
+            mAbortFling = true;
+            setStatus(STATUS_IDLE);
+        }
+
+        mDown = new Point(down);
+
+        return true;
+    }
+
+    @Override
+    public boolean onSingleTapUp(Point focus) {
+        if (!mAbortFling) {
+            setStatus(STATUS_PAINTING);
+            Path path = new Path();
+            path.moveTo(mDown.x, mDown.y);
+            path.lineTo(focus.x, focus.y);
+
+            Matrix matrix = new Matrix();
+            matrix.setTranslate(-mOffset.x, -mOffset.y);
+            matrix.postScale(1.0f / mScale, 1.0f / mScale);
+            path.transform(matrix, mPath);
+        }
         return true;
     }
 
@@ -254,25 +275,22 @@ public class JCanvas extends SurfaceView implements
 
     @Override
     public boolean onScale(Scale scale, Offset pivotOffset) {
-        float x = coordinateScreen2Canvas(scale.pivot.x, mOffset.x);
-        float y = coordinateScreen2Canvas(scale.pivot.y, mOffset.y);
-
         float newScale = mScale * scale.factor;
+        float f = scale.factor;
+
         // limit scale
         if (newScale > MAX_SCALE) {
             newScale = MAX_SCALE;
+            f = 1.0f;
         } else if (newScale < MIN_SCALE) {
             newScale = MIN_SCALE;
+            f = 1.0f;
         }
 
-        float f = newScale / mScale;
         mScale = newScale;
 
-        float offsetX = (f - 1.0f) * x;
-        float offsetY = (f - 1.0f) * y;
-
-        float newOffsetX = mOffset.x - offsetX * mScale + pivotOffset.x;
-        float newOffsetY = mOffset.y - offsetY * mScale + pivotOffset.y;
+        float newOffsetX = mOffset.x - (f - 1.0f) * (scale.pivot.x - mOffset.x) + pivotOffset.x;
+        float newOffsetY = mOffset.y - (f - 1.0f) * (scale.pivot.y - mOffset.y) + pivotOffset.y;
 
         // limit offset
         if (newOffsetX > 0f) {
@@ -340,24 +358,14 @@ public class JCanvas extends SurfaceView implements
             mPath.reset();
         }
 
-//        setStatus(fling ? STATUS_FLING : STATUS_IDLE);
-//        if (fling) {
-//            mScroller.fling((int) mOffset.x, (int) mOffset.y, (int) velocity.x, (int) velocity.y,
-//                    (int) (mWidth * (1.0f - mScale)), 0,
-//                    (int) (mHeight * (1.0f - mScale)), 0);
-//        }
+        mAbortFling = false;
+        if (fling) {
+            mScroller.fling(0, 0, (int) velocity.x, (int) velocity.y,
+                    (int) (mWidth * (1.0f - mScale) - mOffset.x), (int) -mOffset.x,
+                    (int) (mHeight * (1.0f - mScale) - mOffset.y), (int) -mOffset.y);
+        }
+        setStatus(fling ? STATUS_FLING : STATUS_IDLE);
         return true;
-    }
-
-    /**
-     * View 上的坐标转换为在 canvas 中的坐标
-     *
-     * @param coordinate View 上的坐标
-     * @param offset     偏移量
-     * @return 在 canvas 中的坐标
-     */
-    private float coordinateScreen2Canvas(float coordinate, float offset) {
-        return (coordinate - offset) / mScale;
     }
 
     private int mLastScrX = 0;
@@ -368,7 +376,9 @@ public class JCanvas extends SurfaceView implements
         while (STATUS_DESTROYED != getStatus()) {
             long start = System.currentTimeMillis();
 
-            if (STATUS_IDLE != getStatus()) {
+            if (STATUS_IDLE != getStatus() || mNeedInvalidate) {
+                mNeedInvalidate = false;
+
                 if (STATUS_FLING == getStatus()) {
                     if (mScroller.computeScrollOffset()) {
                         mOffset.x += mScroller.getCurrX() - mLastScrX;
@@ -386,6 +396,7 @@ public class JCanvas extends SurfaceView implements
 
                 drawContent();
             }
+
             long end = System.currentTimeMillis();
 
             long time = end - start;
@@ -461,6 +472,12 @@ public class JCanvas extends SurfaceView implements
 
     public void setStatus(int status) {
         mStatus = status;
+        // 当设置为 STATUS_IDLE 时，很大可能绘制线程仍在绘制上一帧。
+        // 当绘制线程绘制完上一帧而开始绘制当前帧时，检测到状态为 STATUS_IDLE 就会停止绘制。
+        // 所以在将状态置为 STATUS_IDLE 时调用 requestInvalidate() 强制进行当前帧的绘制，保证完整。
+        if (STATUS_IDLE == status) {
+            requestInvalidate();
+        }
     }
 
     public int getStatus() {
@@ -494,6 +511,7 @@ public class JCanvas extends SurfaceView implements
         if (0 < mUndoStack.size()) {
             PathData data = mUndoStack.remove(mUndoStack.size() - 1);
             mRedoStack.add(data);
+            requestInvalidate();
         }
     }
 
@@ -504,7 +522,15 @@ public class JCanvas extends SurfaceView implements
         if (0 < mRedoStack.size()) {
             PathData data = mRedoStack.remove(mRedoStack.size() - 1);
             mUndoStack.add(data);
+            requestInvalidate();
         }
+    }
+
+    /**
+     * 请求进行绘制
+     */
+    public void requestInvalidate() {
+        mNeedInvalidate = true;
     }
 
     /**

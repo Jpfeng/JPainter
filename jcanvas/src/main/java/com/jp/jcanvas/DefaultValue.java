@@ -32,7 +32,7 @@ public class DefaultValue {
     /**
      * 最大缩放倍率
      */
-    public static final float MAX_SCALE = 4.0f;
+    public static final float MAX_SCALE = 6.0f;
 
     /**
      * 默认线条宽度

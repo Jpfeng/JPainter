@@ -19,6 +19,7 @@ import android.util.Log;
 import android.view.MotionEvent;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
+import android.view.animation.AccelerateDecelerateInterpolator;
 import android.widget.Scroller;
 
 import com.jp.jcanvas.CanvasGestureDetector.OnCanvasGestureListener;
@@ -59,7 +60,7 @@ public class JCanvas extends SurfaceView implements
     /**
      * 动画状态。无交互但正在显示动画。
      */
-    private static final int STATUS_FLING = 4;
+    private static final int STATUS_ANIMATING = 4;
 
     /**
      * 销毁状态。SurfaceView 已被销毁。
@@ -92,6 +93,7 @@ public class JCanvas extends SurfaceView implements
     private int mStatus;
     private boolean mNeedInvalidate;
 
+    private AccelerateDecelerateInterpolator mInterpolator;
     private Scroller mScroller;
 
     // 撤销栈与重做栈
@@ -128,11 +130,9 @@ public class JCanvas extends SurfaceView implements
 
         mFrameTime = DefaultValue.FRAME_TIME_MILLIS;
         mCornerRadius = DefaultValue.CORNER_RADIUS;
-        mPaintWidth = DefaultValue.PAINT_WIDTH;
-        mPaintColor = DefaultValue.PAINT_COLOR;
-        mPaintCap = DefaultValue.PAINT_CAP;
-        mMinScale = DefaultValue.MIN_SCALE;
-        mMaxScale = DefaultValue.MAX_SCALE;
+
+        setMinScale(DefaultValue.MIN_SCALE);
+        setMaxScale(DefaultValue.MAX_SCALE);
 
         mPaint = new Paint();
         mPaint.setAntiAlias(true);
@@ -142,9 +142,9 @@ public class JCanvas extends SurfaceView implements
         mDrawPaint = new Paint();
         mDrawPaint.setAntiAlias(true);
         mDrawPaint.setStyle(Paint.Style.STROKE);
-        setPaintColor(mPaintColor);
-        setPaintWidth(mPaintWidth);
-        mDrawPaint.setStrokeCap(mPaintCap);
+        setPaintColor(DefaultValue.PAINT_COLOR);
+        setPaintWidth(DefaultValue.PAINT_WIDTH);
+        setPaintCap(DefaultValue.PAINT_CAP);
 
         CornerPathEffect effect = new CornerPathEffect(mCornerRadius);
         mDrawPaint.setPathEffect(effect);
@@ -155,7 +155,8 @@ public class JCanvas extends SurfaceView implements
         mOffset = new Offset();
         mMatrix = new Matrix();
 
-        mScroller = new Scroller(getContext());
+        mInterpolator = new AccelerateDecelerateInterpolator();
+        mScroller = new Scroller(getContext(), mInterpolator);
 
         // 初始化撤销栈与重做栈
         mUndoStack = new ArrayList<>();
@@ -194,12 +195,7 @@ public class JCanvas extends SurfaceView implements
 
         mCache = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
         mDrawCanvas = new Canvas(mCache);
-        drawPaintBoardBackground(mDrawCanvas);
-
-        mCanvas = mHolder.lockCanvas();
-        drawCanvasBackground(mCanvas);
-        mCanvas.drawBitmap(mCache, 0, 0, mPaint);
-        mHolder.unlockCanvasAndPost(mCanvas);
+        requestInvalidate();
 
         Log.i(this.getClass().getSimpleName(),
                 "surfaceChanged: width = " + width + ", height = " + height);
@@ -211,15 +207,15 @@ public class JCanvas extends SurfaceView implements
     }
 
     private Point mDown;
-    private boolean mAbortFling;
+    private boolean mAbortAnimating;
 
     @Override
     public boolean onActionDown(Point down) {
-        if (STATUS_FLING == getStatus()) {
+        if (STATUS_ANIMATING == getStatus()) {
             mScroller.abortAnimation();
             mLastScrX = 0;
             mLastScrY = 0;
-            mAbortFling = true;
+            mAbortAnimating = true;
             setStatus(STATUS_IDLE);
         }
 
@@ -230,7 +226,7 @@ public class JCanvas extends SurfaceView implements
 
     @Override
     public boolean onSingleTapUp(Point focus) {
-        if (!mAbortFling) {
+        if (!mAbortAnimating) {
             setStatus(STATUS_PAINTING);
             Path path = new Path();
             path.moveTo(mDown.x, mDown.y);
@@ -245,7 +241,7 @@ public class JCanvas extends SurfaceView implements
     }
 
     @Override
-    public boolean onDrawPath(Path path) {
+    public boolean onDrawPath(Point focus, Path path, Velocity velocity) {
         if (STATUS_PAINTING != getStatus()) {
             setStatus(STATUS_PAINTING);
         }
@@ -258,9 +254,16 @@ public class JCanvas extends SurfaceView implements
         return true;
     }
 
+    private float mFactor;
+    private float mStartScale;
+    private Point mScalePivot;
+
     @Override
     public void onScaleStart(Point pivot) {
         setStatus(STATUS_SCALING);
+        mFactor = 1.0f;
+        mStartScale = mScale;
+        mScalePivot = new Point(pivot);
         if (null != mScaleListener) {
             mScaleListener.onScaleChangeStart(mScale);
         }
@@ -268,36 +271,23 @@ public class JCanvas extends SurfaceView implements
 
     @Override
     public boolean onScale(Scale scale, Offset pivotOffset) {
-        float newScale = mScale * scale.factor;
+        mFactor *= scale.factor;
+        float newScale = mStartScale * mFactor;
 
         // limit scale
         if (newScale > mMaxScale) {
-            newScale = mMaxScale;
+            newScale = mMaxScale + (newScale - mMaxScale) / 4.0f;
         } else if (newScale < mMinScale) {
-            newScale = mMinScale;
+            newScale = mMinScale - (mMinScale - newScale) / 4.0f;
         }
 
         float f = newScale / mScale;
         mScale = newScale;
 
-        float newOffsetX = mOffset.x - (f - 1.0f) * (scale.pivot.x - mOffset.x) + pivotOffset.x;
-        float newOffsetY = mOffset.y - (f - 1.0f) * (scale.pivot.y - mOffset.y) + pivotOffset.y;
+        mOffset.x = mOffset.x - (f - 1.0f) * (scale.pivot.x - mOffset.x) + pivotOffset.x;
+        mOffset.y = mOffset.y - (f - 1.0f) * (scale.pivot.y - mOffset.y) + pivotOffset.y;
 
-        // limit offset
-        if (newOffsetX > 0f) {
-            newOffsetX = 0f;
-        } else if (newOffsetX < mWidth * (1.0f - mScale)) {
-            newOffsetX = mWidth * (1.0f - mScale);
-        }
-
-        if (newOffsetY > 0f) {
-            newOffsetY = 0f;
-        } else if (newOffsetY < mHeight * (1.0f - mScale)) {
-            newOffsetY = mHeight * (1.0f - mScale);
-        }
-
-        mOffset.x = newOffsetX;
-        mOffset.y = newOffsetY;
+        mScalePivot.set(scale.pivot);
 
         if (null != mScaleListener) {
             mScaleListener.onScaleChange(mScale);
@@ -308,6 +298,7 @@ public class JCanvas extends SurfaceView implements
 
     @Override
     public void onScaleEnd(Point pivot) {
+        mScalePivot.set(pivot);
         if (null != mScaleListener) {
             mScaleListener.onScaleChangeEnd(mScale);
         }
@@ -319,26 +310,14 @@ public class JCanvas extends SurfaceView implements
             setStatus(STATUS_MOVING);
         }
 
-        float newOffsetX = mOffset.x + offset.x;
-        float newOffsetY = mOffset.y + offset.y;
-
-        // limit offset
-        if (newOffsetX > 0f) {
-            newOffsetX = 0f;
-        } else if (newOffsetX < mWidth * (1.0f - mScale)) {
-            newOffsetX = mWidth * (1.0f - mScale);
-        }
-
-        if (newOffsetY > 0f) {
-            newOffsetY = 0f;
-        } else if (newOffsetY < mHeight * (1.0f - mScale)) {
-            newOffsetY = mHeight * (1.0f - mScale);
-        }
-
-        mOffset.x = newOffsetX;
-        mOffset.y = newOffsetY;
+        mOffset.x = mOffset.x + offset.x;
+        mOffset.y = mOffset.y + offset.y;
+        mScalePivot.set(focus);
         return true;
     }
+
+    private float mAnimStartScale;
+    private float mAnimEndScale;
 
     @Override
     public boolean onActionUp(Point focus, boolean fling, Velocity velocity) {
@@ -349,14 +328,129 @@ public class JCanvas extends SurfaceView implements
             mPath.reset();
         }
 
-        mAbortFling = false;
-        if (fling) {
-            mScroller.fling(0, 0, (int) velocity.x, (int) velocity.y,
-                    (int) (mWidth * (1.0f - mScale) - mOffset.x), (int) -mOffset.x,
-                    (int) (mHeight * (1.0f - mScale) - mOffset.y), (int) -mOffset.y);
+        // 处理动画
+        mAbortAnimating = false;
+        boolean animating = checkScale() || checkBonds();
+        mAnimStartScale = mScale;
+        mAnimEndScale = mScale;
+        if (animating) {
+            int targetX;
+            int targetY;
+
+            if (mMinScale > mScale) {
+                // 当前倍率 < mMinScale ，调整后倍率为 mMinScale ，计算偏移
+                mAnimEndScale = mMinScale;
+
+                targetX = (int) (mWidth * (1.0f - mAnimEndScale) / 2.0f - mOffset.x);
+                targetY = (int) (mHeight * (1.0f - mAnimEndScale) / 2.0f - mOffset.y);
+
+                if (null != mScaleListener) {
+                    mScaleListener.onScaleChangeStart(mScale);
+                }
+
+            } else if (mMaxScale < mScale) {
+                // 当前倍率 > mMaxScale ，调整后倍率为 mMaxScale ，偏移需要根据缩放控制点计算
+                mAnimEndScale = mMaxScale;
+
+                float endOffsetX = mScalePivot.x - (mScalePivot.x - mOffset.x)
+                        / mAnimStartScale * mAnimEndScale;
+                float endOffsetY = mScalePivot.y - (mScalePivot.y - mOffset.y)
+                        / mAnimStartScale * mAnimEndScale;
+
+                // 如果计算的偏移过度，还需要调整回来
+                if (mWidth < ((mWidth - endOffsetX) / mAnimEndScale)) {
+                    endOffsetX = mWidth * (1.0f - mAnimEndScale);
+                } else if (0 < endOffsetX) {
+                    endOffsetX = 0f;
+                }
+
+                if (mHeight < ((mHeight - endOffsetY) / mAnimEndScale)) {
+                    endOffsetY = mHeight * (1.0f - mAnimEndScale);
+                } else if (0 < endOffsetY) {
+                    endOffsetY = 0f;
+                }
+
+                targetX = (int) (endOffsetX - mOffset.x);
+                targetY = (int) (endOffsetY - mOffset.y);
+
+                if (null != mScaleListener) {
+                    mScaleListener.onScaleChangeStart(mScale);
+                }
+
+            } else {
+                // 其他情况，倍率不变。偏移根据情况计算
+                float endOffsetX;
+                float endOffsetY;
+
+                if (mScale < 1.0f) {
+                    endOffsetX = mWidth * (1.0f - mAnimEndScale) / 2.0f;
+                    endOffsetY = mHeight * (1.0f - mAnimEndScale) / 2.0f;
+
+                } else {
+                    if (mWidth < (mWidth - mOffset.x) / mScale) {
+                        endOffsetX = mWidth * (1.0f - mAnimEndScale);
+                    } else if (0 < mOffset.x) {
+                        endOffsetX = 0f;
+                    } else {
+                        endOffsetX = mOffset.x;
+                    }
+
+                    if (mHeight < (mHeight - mOffset.y) / mScale) {
+                        endOffsetY = mHeight * (1.0f - mAnimEndScale);
+                    } else if (0 < mOffset.y) {
+                        endOffsetY = 0f;
+                    } else {
+                        endOffsetY = mOffset.y;
+                    }
+                }
+
+                targetX = (int) (endOffsetX - mOffset.x);
+                targetY = (int) (endOffsetY - mOffset.y);
+            }
+
+            // 如果出现边界或倍率越界，则不进行惯性滑动
+            mScroller.startScroll(0, 0, targetX, targetY);
+
+        } else {
+            if (fling) {
+                mScroller.fling(0, 0, (int) velocity.x, (int) velocity.y,
+                        (int) (mWidth * (1.0f - mScale) - mOffset.x), (int) -mOffset.x,
+                        (int) (mHeight * (1.0f - mScale) - mOffset.y), (int) -mOffset.y);
+                animating = true;
+            }
         }
-        setStatus(fling ? STATUS_FLING : STATUS_IDLE);
+
+        setStatus(animating ? STATUS_ANIMATING : STATUS_IDLE);
         return true;
+    }
+
+    /**
+     * 检查倍率，是否出现越界情况
+     *
+     * @return 越界情况
+     */
+    private boolean checkScale() {
+        return mScale > mMaxScale || mScale < mMinScale;
+    }
+
+    /**
+     * 检查边界，是否出现越界情况
+     * 由于调用此方法时对于倍率越界的判断已经进行，所以此处只需判断倍率未越界时的边界情况
+     *
+     * @return 越界情况
+     */
+    private boolean checkBonds() {
+        boolean xOut;
+        boolean yOut;
+        if (mScale > 1.0f) {
+            xOut = mOffset.x > 0 || mOffset.x < mWidth * (1.0f - mScale);
+            yOut = mOffset.y > 0 || mOffset.y < mHeight * (1.0f - mScale);
+        } else {
+            // 若缩放倍率小于 1.0f 则永远在画布中央
+            xOut = mOffset.x != mWidth * (1.0f - mScale) / 2.0f;
+            yOut = mOffset.y != mHeight * (1.0f - mScale) / 2.0f;
+        }
+        return xOut || yOut;
     }
 
     private int mLastScrX = 0;
@@ -370,15 +464,37 @@ public class JCanvas extends SurfaceView implements
             if (STATUS_IDLE != getStatus() || mNeedInvalidate) {
                 mNeedInvalidate = false;
 
-                if (STATUS_FLING == getStatus()) {
+                if (STATUS_ANIMATING == getStatus()) {
+                    // 获取滑动的位移
                     if (mScroller.computeScrollOffset()) {
                         mOffset.x += mScroller.getCurrX() - mLastScrX;
                         mOffset.y += mScroller.getCurrY() - mLastScrY;
+
+                        if (mAnimStartScale != mAnimEndScale) {
+                            float fraction = (float) mScroller.timePassed()
+                                    / (float) mScroller.getDuration();
+
+                            // timePassed() 获得的值可能大于 Duration
+                            fraction = Math.min(fraction, 1.0f);
+                            fraction = mInterpolator.getInterpolation(fraction);
+                            mScale = mAnimStartScale + fraction * (mAnimEndScale - mAnimStartScale);
+
+                            if (null != mScaleListener) {
+                                // 保证回调在主线程执行
+                                post(() -> mScaleListener.onScaleChange(mScale));
+                            }
+                        }
 
                         mLastScrX = mScroller.getCurrX();
                         mLastScrY = mScroller.getCurrY();
 
                     } else {
+                        if (mAnimStartScale != mAnimEndScale) {
+                            if (null != mScaleListener) {
+                                // 保证回调在主线程执行
+                                post(() -> mScaleListener.onScaleChangeEnd(mScale));
+                            }
+                        }
                         mLastScrX = 0;
                         mLastScrY = 0;
                         setStatus(STATUS_IDLE);
@@ -544,6 +660,44 @@ public class JCanvas extends SurfaceView implements
      */
     public Paint.Cap getPaintCap() {
         return mPaintCap;
+    }
+
+    /**
+     * 设定画布的最小缩放倍率
+     * 最小倍率应在 0f 和 1.0f 之间。
+     *
+     * @param scale 倍率
+     */
+    public void setMinScale(float scale) {
+        mMinScale = Math.min(Math.max(0f, scale), 1.0f);
+    }
+
+    /**
+     * 获取画布的最小缩放倍率
+     *
+     * @return 倍率
+     */
+    public float getMinScale() {
+        return mMinScale;
+    }
+
+    /**
+     * 设定画布的最大缩放倍率
+     * 最大倍率至少为 1.0f
+     *
+     * @param scale 倍率
+     */
+    public void setMaxScale(float scale) {
+        mMaxScale = Math.max(scale, 1.0f);
+    }
+
+    /**
+     * 获取画布的最大缩放倍率
+     *
+     * @return 倍率
+     */
+    public float getMaxScale() {
+        return mMaxScale;
     }
 
     /**

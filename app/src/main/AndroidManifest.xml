@@ -10,6 +10,7 @@
         android:theme="@style/AppTheme">
         <activity
             android:name=".PainterActivity"
+            android:configChanges="orientation|screenSize|keyboardHidden|keyboard|screenLayout"
             android:screenOrientation="landscape">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -18,5 +19,4 @@
             </intent-filter>
         </activity>
     </application>
-
 </manifest>

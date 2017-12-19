@@ -128,7 +128,7 @@ public class CanvasGestureDetector {
                 break;
 
             case MotionEvent.ACTION_POINTER_DOWN:
-                // 如果当前状态为非绘制
+                // 如果当前状态为非绘制，此时应进入缩放状态
                 if (!mIsDrawing) {
                     if (!mIsMoving && !mIsScaling) {
                         mHandler.removeMessages(START_DRAW);
@@ -147,6 +147,8 @@ public class CanvasGestureDetector {
 
             case MotionEvent.ACTION_MOVE:
                 if (mIsScaling) {
+                    // 当前只有一个触摸点且状态为 mIsScaling 。当前为准备进入移动状态
+                    // 判断是否应该进入 mIsMoving 状态
                     if (1 == event.getPointerCount()) {
                         double pointerSpan = Math.hypot(x - mMoveLast.x, y - mMoveLast.y);
                         if (pointerSpan > mTouchSlop) {
@@ -171,6 +173,7 @@ public class CanvasGestureDetector {
                                 new Point(currentPivot));
                         handled = mListener.onScale(scale, offset);
 
+                        // 计算控制点的速率
                         final VelocityTracker velocityTracker = mVelocityTracker;
                         velocityTracker.computeCurrentVelocity(1000, mMaxFlingVelocity);
 
@@ -195,15 +198,22 @@ public class CanvasGestureDetector {
                             new Offset(x - mMoveLast.x, y - mMoveLast.y));
                     mMoveLast.set(x, y);
 
-                } else {
-                    if (mIsFirstPointerTouching) {
-                        mPath.lineTo(event.getX(mFirstPointerId), event.getY(mFirstPointerId));
-                    }
+                } else if (mIsFirstPointerTouching) {
+                    // 其他情况，包括 mIsDrawing = true ，和三个状态均为 false 两种情况
+                    // 只有在首个触摸点还存在时才会触发绘制
+                    mPath.lineTo(event.getX(mFirstPointerId), event.getY(mFirstPointerId));
+
+                    final VelocityTracker velocityTracker = mVelocityTracker;
+                    velocityTracker.computeCurrentVelocity(1000, mMaxFlingVelocity);
+                    float vX = velocityTracker.getXVelocity(mFirstPointerId);
+                    float vY = velocityTracker.getYVelocity(mFirstPointerId);
 
                     if (mIsDrawing) {
-                        handled = mListener.onDrawPath(mPath);
+                        handled = mListener.onDrawPath(
+                                new Point(x, y), mPath, new Velocity(vX, vY));
 
                     } else {
+                        // 判断是否应该进入 mIsDrawing 状态
                         float pointerX = event.getX(mFirstPointerId);
                         float pointerY = event.getY(mFirstPointerId);
                         double fingerSpan = Math.hypot(pointerX - mDown.x, pointerY - mDown.y);
@@ -211,7 +221,8 @@ public class CanvasGestureDetector {
                         if (mTouchSlop < fingerSpan) {
                             mHandler.removeMessages(START_DRAW);
                             mIsDrawing = true;
-                            handled = mListener.onDrawPath(mPath);
+                            handled = mListener.onDrawPath(
+                                    new Point(x, y), mPath, new Velocity(vX, vY));
                         }
                     }
                 }
@@ -223,10 +234,13 @@ public class CanvasGestureDetector {
 
                 if (mIsScaling) {
                     if (2 == event.getPointerCount()) {
+                        // 如果是缩放状态且抬起后只剩一个触摸点
+                        // 准备进入移动状态
                         mHandler.sendEmptyMessageDelayed(START_MOVE, TAP_TIMEOUT);
                         mMoveLast.set(getPivot(event));
 
                     } else {
+                        // 更新控制点
                         mPivot.set(getPivot(event));
                         mSpanLast = getSpan(event);
                     }
@@ -236,7 +250,7 @@ public class CanvasGestureDetector {
             case MotionEvent.ACTION_UP:
                 mHandler.removeMessages(START_DRAW);
                 mHandler.removeMessages(START_MOVE);
-                // 首个触摸点抬起但尚未记录路径，则判断为点击。
+                // 首个触摸点抬起但尚未进入任何状态，则判断为点击。
                 if (pointerId == mFirstPointerId
                         && (!mIsDrawing && !mIsScaling && !mIsMoving)) {
                     mIsDrawing = true;
@@ -252,6 +266,7 @@ public class CanvasGestureDetector {
                     mListener.onScaleEnd(new Point(mPivot));
                 }
 
+                // 计算速度，判断是否需要惯性滑动
                 float vX = 0f;
                 float vY = 0f;
                 if (mIsMoving) {
@@ -370,7 +385,7 @@ public class CanvasGestureDetector {
 
         boolean onSingleTapUp(Point focus);
 
-        boolean onDrawPath(final Path path);
+        boolean onDrawPath(Point focus, final Path path, Velocity velocity);
 
         void onScaleStart(Point pivot);
 

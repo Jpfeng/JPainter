@@ -97,6 +97,17 @@
                 android:paddingBottom="8dp"
                 android:paddingTop="8dp"
                 android:text="橡皮" />
+
+            <TextView
+                android:id="@+id/tv_save"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:background="@android:color/darker_gray"
+                android:gravity="center"
+                android:paddingBottom="8dp"
+                android:paddingTop="8dp"
+                android:text="保存" />
         </LinearLayout>
     </ScrollView>
 

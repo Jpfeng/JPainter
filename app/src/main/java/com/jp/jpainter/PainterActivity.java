@@ -15,6 +15,12 @@ import android.widget.SeekBar;
 import android.widget.TextView;
 
 import com.jp.jcanvas.JCanvas;
+import com.jp.jpainter.utils.SDUtil;
+
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.Locale;
 
 public class PainterActivity extends AppCompatActivity {
 
@@ -34,6 +40,7 @@ public class PainterActivity extends AppCompatActivity {
         TextView tvWidth = findViewById(R.id.tv_width);
         TextView tvPaint = findViewById(R.id.tv_paint);
         TextView tvEraser = findViewById(R.id.tv_eraser);
+        TextView tvSave = findViewById(R.id.tv_save);
         JCanvas painter = findViewById(R.id.sp_painter);
         tvScale.setText("1.0x");
 
@@ -128,6 +135,36 @@ public class PainterActivity extends AppCompatActivity {
             painter.useEraser();
             tvEraser.setBackgroundColor(Color.CYAN);
             tvPaint.setBackgroundColor(Color.parseColor("#FFAAAAAA"));
+        });
+
+        tvSave.setOnClickListener(v -> {
+            if (!SDUtil.initBitmapDir()) {
+                new AlertDialog.Builder(this)
+                        .setTitle("保存失败0")
+                        .setPositiveButton("ok", null)
+                        .show();
+                return;
+            }
+
+            DateFormat formatter
+                    = new SimpleDateFormat("yyyy-MM-dd-HH-mm-ss", Locale.getDefault());
+            String fileName = formatter.format(new Date()) + ".png";
+
+            if (SDUtil.saveBitmap(fileName, painter.getBitmap())) {
+                new AlertDialog.Builder(this)
+                        .setTitle("保存成功")
+                        .setPositiveButton("new", (dialog, which) -> {
+                            painter.resetCanvas();
+                        })
+                        .setNegativeButton("ok", null)
+                        .show();
+
+            } else {
+                new AlertDialog.Builder(this)
+                        .setTitle("保存失败1")
+                        .setPositiveButton("ok", null)
+                        .show();
+            }
         });
 
         painter.setOnScaleChangeListener(new JCanvas.OnScaleChangeListener() {

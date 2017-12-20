@@ -762,6 +762,28 @@ public class JCanvas extends SurfaceView implements
     }
 
     /**
+     * 获取当前的 bitmap
+     *
+     * @return bitmap
+     */
+    public Bitmap getBitmap() {
+        return Bitmap.createBitmap(mCache);
+    }
+
+    /**
+     * 重置画布。重置撤销栈
+     */
+    public void resetCanvas() {
+        mScale = 1.0f;
+        mOffset.set(0f, 0f);
+        mMatrix.reset();
+        mPath.reset();
+        mUndoStack.clear();
+        mRedoStack.clear();
+        requestInvalidate();
+    }
+
+    /**
      * 请求进行绘制
      */
     public void requestInvalidate() {

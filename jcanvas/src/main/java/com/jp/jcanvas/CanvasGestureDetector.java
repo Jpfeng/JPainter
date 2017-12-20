@@ -17,7 +17,7 @@ import com.jp.jcanvas.entity.Velocity;
 /**
  *
  */
-public class CanvasGestureDetector {
+class CanvasGestureDetector {
 
     private static final int START_DRAW = 1;
     private static final int START_MOVE = 2;
@@ -46,20 +46,9 @@ public class CanvasGestureDetector {
     private Velocity mPivotVelocity;
     private Path mPath;
 
-    public CanvasGestureDetector(Context context, @NonNull OnCanvasGestureListener listener) {
-        this(context, listener, null);
-    }
-
-    public CanvasGestureDetector(Context context, @NonNull OnCanvasGestureListener listener,
-                                 Handler handler) {
-        if (null != handler) {
-            mHandler = new GestureHandler(handler);
-        } else {
-            mHandler = new GestureHandler();
-        }
-
+    CanvasGestureDetector(Context context, @NonNull OnCanvasGestureListener listener) {
+        mHandler = new GestureHandler();
         mListener = listener;
-
         init(context);
     }
 
@@ -80,10 +69,6 @@ public class CanvasGestureDetector {
             super();
         }
 
-        GestureHandler(Handler handler) {
-            super(handler.getLooper());
-        }
-
         @Override
         public void handleMessage(Message msg) {
             switch (msg.what) {
@@ -101,7 +86,7 @@ public class CanvasGestureDetector {
         }
     }
 
-    public boolean onTouchEvent(MotionEvent event) {
+    boolean onTouchEvent(MotionEvent event) {
         float x = event.getX();
         float y = event.getY();
         int pointerId = event.getPointerId(event.getActionIndex());
@@ -254,8 +239,7 @@ public class CanvasGestureDetector {
                 if (pointerId == mFirstPointerId
                         && (!mIsDrawing && !mIsScaling && !mIsMoving)) {
                     mIsDrawing = true;
-                    handled = mListener.onSingleTapUp(new Point(event.getX(mFirstPointerId),
-                            event.getY(mFirstPointerId)));
+                    handled = mListener.onSingleTapUp(new Point(x, y));
                 }
 
                 mPath.reset();

@@ -136,6 +136,8 @@ public class JCanvas extends SurfaceView implements
 
         mPaint = new Paint();
         mPaint.setAntiAlias(true);
+        mPaint.setStyle(Paint.Style.FILL_AND_STROKE);
+        mPaint.setColor(DefaultValue.CANVAS_COLOR);
         // 缩放时对性能影响很大，暂时禁用
 //        mPaint.setFilterBitmap(true);
 
@@ -145,6 +147,7 @@ public class JCanvas extends SurfaceView implements
         setPaintColor(DefaultValue.PAINT_COLOR);
         setPaintWidth(DefaultValue.PAINT_WIDTH);
         setPaintCap(DefaultValue.PAINT_CAP);
+        mDrawPaint.setXfermode(DefaultValue.XFER_PAINT);
 
         CornerPathEffect effect = new CornerPathEffect(mCornerRadius);
         mDrawPaint.setPathEffect(effect);
@@ -550,10 +553,13 @@ public class JCanvas extends SurfaceView implements
      * https://medium.com/@ali.muzaffar/android-why-your-canvas-shapes-arent-smooth-aa2a3f450eb5
      */
     private void drawCache() {
-        drawPaintBoardBackground(mDrawCanvas);
+        // 清空画布
+        mDrawCanvas.drawColor(Color.TRANSPARENT, PorterDuff.Mode.CLEAR);
+        // 绘制撤销栈中记录的路径
         for (PathData path : mUndoStack) {
             path.draw(mDrawCanvas);
         }
+        // 绘制当前工作路径
         if (!mPath.isEmpty()) {
             mDrawCanvas.drawPath(mPath, mDrawPaint);
         }
@@ -570,14 +576,13 @@ public class JCanvas extends SurfaceView implements
         Paint p = new Paint();
         p.setShader(shader);
         canvas.drawPaint(p);
-    }
 
-    /**
-     * 绘制画板背景。
-     */
-    private void drawPaintBoardBackground(Canvas canvas) {
-        // 绘制白色画板
-        canvas.drawColor(Color.WHITE, PorterDuff.Mode.SRC);
+        // 绘制画布背景
+        float l = mOffset.x;
+        float t = mOffset.y;
+        float r = l + mWidth * mScale;
+        float b = t + mHeight * mScale;
+        canvas.drawRect(l, t, r, b, mPaint);
     }
 
     /**
@@ -698,6 +703,20 @@ public class JCanvas extends SurfaceView implements
      */
     public float getMaxScale() {
         return mMaxScale;
+    }
+
+    /**
+     * 设置当前为画笔
+     */
+    public void usePaint() {
+        mDrawPaint.setXfermode(DefaultValue.XFER_PAINT);
+    }
+
+    /**
+     * 设置当前为橡皮
+     */
+    public void useEraser() {
+        mDrawPaint.setXfermode(DefaultValue.XFER_ERASER);
     }
 
     /**

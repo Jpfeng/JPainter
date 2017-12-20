@@ -1,10 +1,10 @@
 package com.jp.jpainter.utils;
 
-import android.content.pm.PackageInfo;
 import android.os.Build;
 import android.text.TextUtils;
 import android.util.Log;
 
+import com.jp.jpainter.BuildConfig;
 import com.jp.jpainter.PainterApplication;
 
 import java.io.FileOutputStream;
@@ -23,7 +23,6 @@ public class PainterCrashHandler implements Thread.UncaughtExceptionHandler {
     private static PainterCrashHandler mCrashHandlerInstance;
 
     private boolean mSDReady = false;
-    private PackageInfo mPInfo;
     private DateFormat mFormatter;
 
     public static synchronized PainterCrashHandler getInstance() {
@@ -40,14 +39,13 @@ public class PainterCrashHandler implements Thread.UncaughtExceptionHandler {
     /**
      * 初始化捕获类
      */
-    public void init(PackageInfo pInfo) {
+    public void init() {
         mCrashed = false;
         //获取系统默认的 UncaughtExceptionHandler
         mDefaultHandler = Thread.getDefaultUncaughtExceptionHandler();
         //设置自身为进程的默认处理器
         Thread.setDefaultUncaughtExceptionHandler(this);
 
-        mPInfo = pInfo;
         mSDReady = SDUtil.initLogDir();
 
         mFormatter = new SimpleDateFormat("yyyy-MM-dd-HH-mm-ss", Locale.getDefault());
@@ -105,59 +103,54 @@ public class PainterCrashHandler implements Thread.UncaughtExceptionHandler {
     private String getCrashLog(Throwable e) {
         StringBuffer log = new StringBuffer();
 
-        if (mPInfo != null) {
-            if (e != null) {
-                //app版本信息
-                log.append("App Version：")
-                        .append(mPInfo.versionName)
-                        .append("_")
-                        .append(mPInfo.versionCode)
-                        .append("\n")
+        //app版本信息
+        log.append("App Version：")
+                .append(BuildConfig.VERSION_NAME)
+                .append("_")
+                .append(BuildConfig.VERSION_CODE)
+                .append("\n")
 
-                        //手机系统信息
-                        .append("OS Version：")
-                        .append(Build.VERSION.RELEASE)
-                        .append("_")
-                        .append(Build.VERSION.SDK_INT)
-                        .append("\n")
+                //手机系统信息
+                .append("OS Version：")
+                .append(Build.VERSION.RELEASE)
+                .append("_")
+                .append(Build.VERSION.SDK_INT)
+                .append("\n")
 
-                        //手机制造商
-                        .append("Vendor: ")
-                        .append(Build.MANUFACTURER)
-                        .append("\n")
+                //手机制造商
+                .append("Vendor: ")
+                .append(Build.MANUFACTURER)
+                .append("\n")
 
-                        //手机型号
-                        .append("Model: ")
-                        .append(Build.MODEL)
-                        .append("\n");
+                //手机型号
+                .append("Model: ")
+                .append(Build.MODEL)
+                .append("\n");
 
-                String errorStr = TextUtils.isEmpty(e.getLocalizedMessage())
-                        ? TextUtils.isEmpty(e.getMessage())
-                        ? e.toString()
-                        : e.getMessage()
-                        : e.getLocalizedMessage();
+        if (null != e) {
+            String errorStr = TextUtils.isEmpty(e.getLocalizedMessage())
+                    ? TextUtils.isEmpty(e.getMessage())
+                    ? e.toString()
+                    : e.getMessage()
+                    : e.getLocalizedMessage();
 
-                log.append("Exception: ")
-                        .append(errorStr)
-                        .append("\n");
+            log.append("Exception: ")
+                    .append(errorStr)
+                    .append("\n");
 
-                StackTraceElement[] elements = e.getStackTrace();
-                if (null != elements) {
-                    for (StackTraceElement element : elements) {
-                        log.append(element.toString())
-                                .append("\n");
-                    }
+            StackTraceElement[] elements = e.getStackTrace();
+            if (null != elements) {
+                for (StackTraceElement element : elements) {
+                    log.append(element.toString())
+                            .append("\n");
                 }
-
-            } else {
-                log.append("no exception. Throwable is null\n");
             }
 
-            return log.toString();
-
         } else {
-            return "";
+            log.append("no exception. Throwable is null\n");
         }
+
+        return log.toString();
     }
 
     /**

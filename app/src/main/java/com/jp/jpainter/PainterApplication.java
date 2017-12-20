@@ -27,6 +27,6 @@ public class PainterApplication extends Application {
             e.printStackTrace();
         }
 
-        crashHandler.init(info);
+        crashHandler.init();
     }
 }

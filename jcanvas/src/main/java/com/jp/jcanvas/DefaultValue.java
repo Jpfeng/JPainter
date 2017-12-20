@@ -2,6 +2,9 @@ package com.jp.jcanvas;
 
 import android.graphics.Color;
 import android.graphics.Paint;
+import android.graphics.PorterDuff;
+import android.graphics.PorterDuffXfermode;
+import android.graphics.Xfermode;
 import android.support.annotation.ColorInt;
 
 /**
@@ -46,7 +49,23 @@ public class DefaultValue {
     public static final int PAINT_COLOR = Color.BLACK;
 
     /**
+     * 默认画布颜色
+     */
+    @ColorInt
+    public static final int CANVAS_COLOR = Color.WHITE;
+
+    /**
      * 默认笔头形状
      */
     public static final Paint.Cap PAINT_CAP = Paint.Cap.ROUND;
+
+    /**
+     * 画笔混合模式
+     */
+    public static final Xfermode XFER_PAINT = new PorterDuffXfermode(PorterDuff.Mode.SRC_OVER);
+
+    /**
+     * 橡皮混合模式
+     */
+    public static final Xfermode XFER_ERASER = new PorterDuffXfermode(PorterDuff.Mode.CLEAR);
 }

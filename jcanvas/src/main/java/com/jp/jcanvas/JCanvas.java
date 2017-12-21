@@ -555,6 +555,11 @@ public class JCanvas extends SurfaceView implements
     private void drawCache() {
         // 清空画布
         mDrawCanvas.drawColor(Color.TRANSPARENT, PorterDuff.Mode.CLEAR);
+        // 绘制画布背景色
+        mDrawCanvas.drawColor(DefaultValue.CANVAS_COLOR, PorterDuff.Mode.SRC);
+
+        int layer = mDrawCanvas.saveLayer(0, 0,
+                mDrawCanvas.getWidth(), mDrawCanvas.getHeight(), null, Canvas.ALL_SAVE_FLAG);
         // 绘制撤销栈中记录的路径
         for (PathData path : mUndoStack) {
             path.draw(mDrawCanvas);
@@ -563,6 +568,7 @@ public class JCanvas extends SurfaceView implements
         if (!mPath.isEmpty()) {
             mDrawCanvas.drawPath(mPath, mDrawPaint);
         }
+        mDrawCanvas.restoreToCount(layer);
     }
 
     /**
@@ -577,12 +583,12 @@ public class JCanvas extends SurfaceView implements
         p.setShader(shader);
         canvas.drawPaint(p);
 
-        // 绘制画布背景
-        float l = mOffset.x;
-        float t = mOffset.y;
-        float r = l + mWidth * mScale;
-        float b = t + mHeight * mScale;
-        canvas.drawRect(l, t, r, b, mPaint);
+//        // 绘制画布背景
+//        float l = mOffset.x;
+//        float t = mOffset.y;
+//        float r = l + mWidth * mScale;
+//        float b = t + mHeight * mScale;
+//        canvas.drawRect(l, t, r, b, mPaint);
     }
 
     /**

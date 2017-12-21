@@ -41,6 +41,7 @@ public class PainterActivity extends AppCompatActivity {
         TextView tvPaint = findViewById(R.id.tv_paint);
         TextView tvEraser = findViewById(R.id.tv_eraser);
         TextView tvSave = findViewById(R.id.tv_save);
+        TextView tvClear = findViewById(R.id.tv_clear);
         JCanvas painter = findViewById(R.id.sp_painter);
         tvScale.setText("1.0x");
 
@@ -165,6 +166,16 @@ public class PainterActivity extends AppCompatActivity {
                         .setPositiveButton("ok", null)
                         .show();
             }
+        });
+
+        tvClear.setOnClickListener(v -> {
+            new AlertDialog.Builder(this)
+                    .setTitle("清空？")
+                    .setPositiveButton("ok", (dialog, which) -> {
+                        painter.resetCanvas();
+                    })
+                    .setNegativeButton("no", null)
+                    .show();
         });
 
         painter.setOnScaleChangeListener(new JCanvas.OnScaleChangeListener() {

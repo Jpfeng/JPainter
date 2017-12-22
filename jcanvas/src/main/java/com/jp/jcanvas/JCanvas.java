@@ -29,7 +29,7 @@ import com.jp.jcanvas.entity.Point;
 import com.jp.jcanvas.entity.Scale;
 import com.jp.jcanvas.entity.Velocity;
 
-import java.util.ArrayList;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
  *
@@ -97,8 +97,8 @@ public class JCanvas extends SurfaceView implements
     private Scroller mScroller;
 
     // 撤销栈与重做栈
-    private ArrayList<PathData> mUndoStack;
-    private ArrayList<PathData> mRedoStack;
+    private CopyOnWriteArrayList<PathData> mUndoStack;
+    private CopyOnWriteArrayList<PathData> mRedoStack;
 
     private OnScaleChangeListener mScaleListener;
 
@@ -162,8 +162,8 @@ public class JCanvas extends SurfaceView implements
         mScroller = new Scroller(getContext(), mInterpolator);
 
         // 初始化撤销栈与重做栈
-        mUndoStack = new ArrayList<>();
-        mRedoStack = new ArrayList<>();
+        mUndoStack = new CopyOnWriteArrayList<>();
+        mRedoStack = new CopyOnWriteArrayList<>();
 
         mNeedInvalidate = false;
 

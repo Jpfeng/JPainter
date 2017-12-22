@@ -186,7 +186,8 @@ class CanvasGestureDetector {
                 } else if (mIsFirstPointerTouching) {
                     // 其他情况，包括 mIsDrawing = true ，和三个状态均为 false 两种情况
                     // 只有在首个触摸点还存在时才会触发绘制
-                    mPath.lineTo(event.getX(mFirstPointerId), event.getY(mFirstPointerId));
+                    int pointerIndex = event.findPointerIndex(mFirstPointerId);
+                    mPath.lineTo(event.getX(pointerIndex), event.getY(pointerIndex));
 
                     final VelocityTracker velocityTracker = mVelocityTracker;
                     velocityTracker.computeCurrentVelocity(1000, mMaxFlingVelocity);
@@ -199,8 +200,8 @@ class CanvasGestureDetector {
 
                     } else {
                         // 判断是否应该进入 mIsDrawing 状态
-                        float pointerX = event.getX(mFirstPointerId);
-                        float pointerY = event.getY(mFirstPointerId);
+                        float pointerX = event.getX(pointerIndex);
+                        float pointerY = event.getY(pointerIndex);
                         double fingerSpan = Math.hypot(pointerX - mDown.x, pointerY - mDown.y);
 
                         if (mTouchSlop < fingerSpan) {
@@ -239,7 +240,9 @@ class CanvasGestureDetector {
                 if (pointerId == mFirstPointerId
                         && (!mIsDrawing && !mIsScaling && !mIsMoving)) {
                     mIsDrawing = true;
-                    handled = mListener.onSingleTapUp(new Point(x, y));
+                    int pointerIndex = event.findPointerIndex(mFirstPointerId);
+                    handled = mListener.onSingleTapUp(
+                            new Point(event.getX(pointerIndex), event.getY(pointerIndex)));
                 }
 
                 mPath.reset();

@@ -4,7 +4,6 @@ import android.Manifest;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.os.Bundle;
-import android.support.annotation.ColorInt;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
@@ -16,7 +15,7 @@ import android.widget.SeekBar;
 import android.widget.TextView;
 
 import com.jp.jcanvas.JCanvas;
-import com.jp.jcanvas.jpicker.HueWheel;
+import com.jp.jcanvas.colorpicker.ColorPicker;
 import com.jp.jpainter.utils.SDUtil;
 
 import java.text.DateFormat;
@@ -27,8 +26,6 @@ import java.util.Locale;
 public class PainterActivity extends AppCompatActivity {
 
     private int mPaintWidth;
-    @ColorInt
-    private int mPaintColor;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -46,13 +43,12 @@ public class PainterActivity extends AppCompatActivity {
         TextView tvClear = findViewById(R.id.tv_clear);
 
         CardView cPicker = findViewById(R.id.cv_color_picker);
-        HueWheel hWheel = findViewById(R.id.hw_hue);
+        ColorPicker cp = findViewById(R.id.cp_picker);
         JCanvas painter = findViewById(R.id.sp_painter);
 
         tvScale.setText("1.0x");
-        hWheel.setHue(0f);
-        mPaintColor = Color.RED;
-        painter.setPaintColor(mPaintColor);
+        cp.setColor(Color.RED);
+        painter.setPaintColor(cp.getColor());
 
         tvPaint.setBackgroundColor(Color.CYAN);
 
@@ -61,6 +57,7 @@ public class PainterActivity extends AppCompatActivity {
 
         tvColor.setOnClickListener(v -> {
             if (View.VISIBLE == cPicker.getVisibility()) {
+                painter.setPaintColor(cp.getColor());
                 cPicker.setVisibility(View.GONE);
             } else {
                 cPicker.setVisibility(View.VISIBLE);
@@ -167,12 +164,6 @@ public class PainterActivity extends AppCompatActivity {
                 tvScale.setText(
                         String.valueOf((float) (Math.round(endScale * 10)) / 10).concat("x"));
             }
-        });
-
-        hWheel.setOnHueChangeListener(hue -> {
-            float[] hsv = {hue, 1f, 1f};
-            mPaintColor = Color.HSVToColor(hsv);
-            painter.setPaintColor(mPaintColor);
         });
 
         int permission = ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE);

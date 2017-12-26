@@ -1,4 +1,4 @@
-package com.jp.jcanvas.jpicker;
+package com.jp.jcanvas.colorpicker;
 
 import android.annotation.TargetApi;
 import android.content.Context;
@@ -25,7 +25,7 @@ import android.widget.Scroller;
 /**
  *
  */
-public class HueWheel extends View {
+class HueWheel extends View {
 
     @ColorInt
     private static final int[] mWheelColors = new int[]{
@@ -68,7 +68,7 @@ public class HueWheel extends View {
     private Scroller mScroller;
     private VelocityTracker mVelocityTracker;
 
-    private OnHueChangeListener mDegListener;
+    private OnHueChangeListener mHueListener;
 
     public HueWheel(Context context) {
         this(context, null);
@@ -239,8 +239,8 @@ public class HueWheel extends View {
                 if (mHue < MIN_DEGREE) {
                     mHue = MAX_DEGREE + mHue;
                 }
-                if (null != mDegListener) {
-                    mDegListener.onHueChange(mHue);
+                if (null != mHueListener) {
+                    mHueListener.onHueChange(mHue);
                 }
                 mMoveLastY = y;
                 handled = true;
@@ -291,8 +291,8 @@ public class HueWheel extends View {
             if (mHue < MIN_DEGREE) {
                 mHue = MAX_DEGREE + mHue;
             }
-            if (null != mDegListener) {
-                mDegListener.onHueChange(mHue);
+            if (null != mHueListener) {
+                mHueListener.onHueChange(mHue);
             }
             mScrollLastY = currY;
             invalidate();
@@ -337,6 +337,9 @@ public class HueWheel extends View {
     public void setHue(@FloatRange(from = MIN_DEGREE, to = MAX_DEGREE) float hue) {
         mHue = hue;
         invalidate();
+        if (null != mHueListener) {
+            mHueListener.onHueChange(mHue);
+        }
     }
 
     @Px
@@ -356,7 +359,7 @@ public class HueWheel extends View {
     }
 
     public void setOnHueChangeListener(OnHueChangeListener listener) {
-        mDegListener = listener;
+        mHueListener = listener;
     }
 
     public interface OnHueChangeListener {

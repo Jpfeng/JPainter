@@ -140,9 +140,9 @@
             android:layout_margin="16dp"
             android:visibility="gone">
 
-            <com.jp.jcanvas.jpicker.HueWheel
-                android:id="@+id/hw_hue"
-                android:layout_width="wrap_content"
+            <com.jp.jcanvas.colorpicker.ColorPicker
+                android:id="@+id/cp_picker"
+                android:layout_width="match_parent"
                 android:layout_height="match_parent" />
         </android.support.v7.widget.CardView>
     </FrameLayout>

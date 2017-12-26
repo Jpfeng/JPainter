@@ -19,6 +19,7 @@ public class ColorPicker extends LinearLayout {
 
     private HueWheel mHueWheel;
     private SaturationValuePanel mSVPanel;
+    private AlphaSeekBar mAlphaBar;
 
     public ColorPicker(Context context) {
         this(context, null);
@@ -34,7 +35,8 @@ public class ColorPicker extends LinearLayout {
     }
 
     @TargetApi(21)
-    public ColorPicker(Context context, AttributeSet attrs, int defStyleAttr, int defStyleRes) {
+    public ColorPicker(Context context, @Nullable AttributeSet attrs, int defStyleAttr,
+                       int defStyleRes) {
         super(context, attrs, defStyleAttr, defStyleRes);
         init(context);
     }
@@ -43,8 +45,12 @@ public class ColorPicker extends LinearLayout {
         View view = LayoutInflater.from(context).inflate(R.layout.layout_color_picker, this);
         mHueWheel = view.findViewById(R.id.hw_hue);
         mSVPanel = view.findViewById(R.id.svp_panel);
+        mAlphaBar = view.findViewById(R.id.asb_alpha);
 
         mHueWheel.setOnHueChangeListener(hue -> mSVPanel.setHue(hue));
+        mSVPanel.setOnColorChangeListener(color -> mAlphaBar.setColor(color));
+        mAlphaBar.setOnColorChangeListener(alpha -> {
+        });
     }
 
     public void setColor(@ColorInt int color) {
@@ -52,10 +58,18 @@ public class ColorPicker extends LinearLayout {
         Color.colorToHSV(color, hsv);
         mHueWheel.setHue(hsv[0]);
         mSVPanel.setColor(color);
+        float alpha = Color.alpha(color) / 255f;
+        mAlphaBar.setAlpha(alpha);
     }
 
     @ColorInt
     public int getColor() {
-        return mSVPanel.getColor();
+        int raw = mSVPanel.getColor();
+        int r = Color.red(raw);
+        int g = Color.green(raw);
+        int b = Color.blue(raw);
+        int a = (int) (mAlphaBar.getAlpha() * 255 + 0.5f);
+
+        return Color.argb(a, r, g, b);
     }
 }

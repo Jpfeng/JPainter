@@ -50,7 +50,8 @@ class SaturationValuePanel extends View {
     }
 
     @TargetApi(21)
-    public SaturationValuePanel(Context context, @Nullable AttributeSet attrs, int defStyleAttr, int defStyleRes) {
+    public SaturationValuePanel(Context context, @Nullable AttributeSet attrs, int defStyleAttr,
+                                int defStyleRes) {
         super(context, attrs, defStyleAttr, defStyleRes);
         init(context);
     }
@@ -186,6 +187,10 @@ class SaturationValuePanel extends View {
     public void setHue(@FloatRange(from = 0f, to = 360f) float hue) {
         mHSV[0] = hue;
         invalidate();
+
+        if (null != mSVListener) {
+            mSVListener.onColorChange(Color.HSVToColor(mHSV));
+        }
     }
 
     public void setColor(@ColorInt int color) {

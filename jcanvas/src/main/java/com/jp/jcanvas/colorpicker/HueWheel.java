@@ -84,7 +84,8 @@ class HueWheel extends View {
     }
 
     @TargetApi(21)
-    public HueWheel(Context context, @Nullable AttributeSet attrs, int defStyleAttr, int defStyleRes) {
+    public HueWheel(Context context, @Nullable AttributeSet attrs, int defStyleAttr,
+                    int defStyleRes) {
         super(context, attrs, defStyleAttr, defStyleRes);
         init(context);
     }

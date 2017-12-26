@@ -582,13 +582,6 @@ public class JCanvas extends SurfaceView implements
         Paint p = new Paint();
         p.setShader(shader);
         canvas.drawPaint(p);
-
-//        // 绘制画布背景
-//        float l = mOffset.x;
-//        float t = mOffset.y;
-//        float r = l + mWidth * mScale;
-//        float b = t + mHeight * mScale;
-//        canvas.drawRect(l, t, r, b, mPaint);
     }
 
     /**

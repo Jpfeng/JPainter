@@ -15,13 +15,11 @@ import android.graphics.RectF;
 import android.graphics.Shader;
 import android.support.annotation.ColorInt;
 import android.support.annotation.FloatRange;
-import android.support.annotation.FractionRes;
 import android.support.annotation.Nullable;
 import android.util.AttributeSet;
 import android.util.TypedValue;
 import android.view.MotionEvent;
 import android.view.View;
-import android.widget.SeekBar;
 
 import com.jp.jcanvas.R;
 
@@ -31,8 +29,7 @@ import com.jp.jcanvas.R;
 class AlphaSeekBar extends View {
 
     public static final int DEFAULT_BAR_HEIGHT_DP = 32;
-    private static final int DEFAULT_FINDER_LEDGE_DP = 8;
-    private static final int DEFAULT_FINDER_WIDTH_DP = 24;
+    private static final int DEFAULT_FINDER_WIDTH_DP = 16;
     private static final int DEFAULT_FINDER_EDGE_DP = 4;
     private static final int DEFAULT_FINDER_CORNER_RADIUS = 4;
 
@@ -110,8 +107,7 @@ class AlphaSeekBar extends View {
             }
         }
 
-        int defaultH = getPaddingTop() + getPaddingBottom() + dp2px(DEFAULT_BAR_HEIGHT_DP)
-                + dp2px(DEFAULT_FINDER_LEDGE_DP) * 2;
+        int defaultH = getPaddingTop() + getPaddingBottom() + dp2px(DEFAULT_BAR_HEIGHT_DP);
 
         if (MeasureSpec.EXACTLY == hMode) {
             hResult = hSize;
@@ -124,11 +120,11 @@ class AlphaSeekBar extends View {
 
         setMeasuredDimension(wResult, hResult);
 
-        float l = getPaddingLeft() + dp2px(DEFAULT_FINDER_WIDTH_DP / 2);
-        float r = wResult - getPaddingRight() - dp2px(DEFAULT_FINDER_WIDTH_DP / 2);
-        float t = getPaddingTop() + dp2px(DEFAULT_FINDER_LEDGE_DP);
+        float l = getPaddingLeft();
+        float r = wResult - getPaddingRight();
+        float t = getPaddingTop();
         if (hResult > defaultH) {
-            t += (defaultH - hResult) / 2f;
+            t += (hResult - defaultH - getPaddingTop() - getPaddingBottom()) / 2f;
         }
         float b = t + dp2px(DEFAULT_BAR_HEIGHT_DP);
         mRectBar.set(l, t, r, b);
@@ -149,11 +145,11 @@ class AlphaSeekBar extends View {
         canvas.restoreToCount(layerBar);
 
         float halfEW = dp2px(DEFAULT_FINDER_EDGE_DP) / 2;
-        float l = mRectBar.left - dp2px(DEFAULT_FINDER_WIDTH_DP / 2) + halfEW
-                + (mRectBar.right - mRectBar.left) * mAlpha;
-        float t = mRectBar.top - dp2px(DEFAULT_FINDER_LEDGE_DP) + halfEW;
+        float l = mRectBar.left + halfEW
+                + (mRectBar.right - mRectBar.left - dp2px(DEFAULT_FINDER_WIDTH_DP)) * mAlpha;
+        float t = mRectBar.top + halfEW;
         float r = l + dp2px(DEFAULT_FINDER_WIDTH_DP) - halfEW * 2;
-        float b = mRectBar.bottom + dp2px(DEFAULT_FINDER_LEDGE_DP) - halfEW;
+        float b = mRectBar.bottom - halfEW;
         mRectFinder.set(l, t, r, b);
 
         float cornerR = dp2px(DEFAULT_FINDER_CORNER_RADIUS);

@@ -7,8 +7,10 @@ import android.support.annotation.ColorInt;
 import android.support.annotation.Nullable;
 import android.util.AttributeSet;
 import android.view.LayoutInflater;
+import android.view.MotionEvent;
 import android.view.View;
 import android.widget.LinearLayout;
+import android.widget.TextView;
 
 import com.jp.jcanvas.R;
 
@@ -19,7 +21,10 @@ public class ColorPicker extends LinearLayout {
 
     private HueWheel mHueWheel;
     private SaturationValuePanel mSVPanel;
-    private AlphaSeekBar mAlphaBar;
+    private ColorSeekBar mAlphaBar;
+    private ColorPreviewView mPreview;
+    private TextView mTvConfirm;
+    private OnConfirmListener mListener;
 
     public ColorPicker(Context context) {
         this(context, null);
@@ -46,11 +51,27 @@ public class ColorPicker extends LinearLayout {
         mHueWheel = view.findViewById(R.id.hw_hue);
         mSVPanel = view.findViewById(R.id.svp_panel);
         mAlphaBar = view.findViewById(R.id.asb_alpha);
+        mPreview = view.findViewById(R.id.cpv_preview);
+        mTvConfirm = view.findViewById(R.id.tv_confirm);
 
         mHueWheel.setOnHueChangeListener(hue -> mSVPanel.setHue(hue));
-        mSVPanel.setOnColorChangeListener(color -> mAlphaBar.setColor(color));
-        mAlphaBar.setOnColorChangeListener(alpha -> {
+        mSVPanel.setOnColorChangeListener(color -> {
+            mAlphaBar.setColor(color);
+            mPreview.setNew(getColor());
         });
+        mAlphaBar.setOnAlphaChangeListener(alpha -> mPreview.setNew(getColor()));
+        mTvConfirm.setOnClickListener(v -> {
+            if (null != mListener) {
+                mListener.onConfirm(this);
+            }
+            mPreview.setColor(getColor());
+        });
+    }
+
+    @Override
+    public boolean dispatchTouchEvent(MotionEvent ev) {
+        super.dispatchTouchEvent(ev);
+        return true;
     }
 
     public void setColor(@ColorInt int color) {
@@ -60,6 +81,7 @@ public class ColorPicker extends LinearLayout {
         mSVPanel.setColor(color);
         float alpha = Color.alpha(color) / 255f;
         mAlphaBar.setAlpha(alpha);
+        mPreview.setColor(color);
     }
 
     @ColorInt
@@ -71,5 +93,13 @@ public class ColorPicker extends LinearLayout {
         int a = (int) (mAlphaBar.getAlpha() * 255 + 0.5f);
 
         return Color.argb(a, r, g, b);
+    }
+
+    public void setOnConfirmListener(OnConfirmListener listener) {
+        mListener = listener;
+    }
+
+    public interface OnConfirmListener {
+        void onConfirm(ColorPicker view);
     }
 }

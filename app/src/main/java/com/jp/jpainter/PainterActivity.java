@@ -48,6 +48,10 @@ public class PainterActivity extends AppCompatActivity {
 
         tvScale.setText("1.0x");
         cp.setColor(Color.RED);
+        cp.setOnConfirmListener(view -> {
+            painter.setPaintColor(cp.getColor());
+            cPicker.setVisibility(View.GONE);
+        });
         painter.setPaintColor(cp.getColor());
 
         tvPaint.setBackgroundColor(Color.CYAN);
@@ -56,10 +60,7 @@ public class PainterActivity extends AppCompatActivity {
         tvRedo.setOnClickListener(v -> painter.redo());
 
         tvColor.setOnClickListener(v -> {
-            if (View.VISIBLE == cPicker.getVisibility()) {
-                painter.setPaintColor(cp.getColor());
-                cPicker.setVisibility(View.GONE);
-            } else {
+            if (View.VISIBLE != cPicker.getVisibility()) {
                 cPicker.setVisibility(View.VISIBLE);
             }
         });

@@ -38,7 +38,7 @@ class HueWheel extends View {
             0xFFFF00FF, // magenta(300, 100, 100)
             0xFFFF0000}; // red(0, 100, 100)
 
-    private static final int DEFAULT_WHEEL_WIDTH_DP = 72;
+    private static final int DEFAULT_WHEEL_WIDTH_DP = 56;
     private static final int DEFAULT_FINDER_LEDGE_DP = 8;
     private static final int DEFAULT_FINDER_HEIGHT_DP = 24;
     private static final int DEFAULT_FINDER_EDGE_DP = 4;

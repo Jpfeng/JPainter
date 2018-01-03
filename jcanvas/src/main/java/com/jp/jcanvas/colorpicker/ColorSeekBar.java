@@ -26,7 +26,7 @@ import com.jp.jcanvas.R;
 /**
  *
  */
-class AlphaSeekBar extends View {
+class ColorSeekBar extends View {
 
     public static final int DEFAULT_BAR_HEIGHT_DP = 32;
     private static final int DEFAULT_FINDER_WIDTH_DP = 16;
@@ -48,21 +48,21 @@ class AlphaSeekBar extends View {
 
     private OnAlphaChangeListener mListener;
 
-    public AlphaSeekBar(Context context) {
+    public ColorSeekBar(Context context) {
         this(context, null);
     }
 
-    public AlphaSeekBar(Context context, @Nullable AttributeSet attrs) {
+    public ColorSeekBar(Context context, @Nullable AttributeSet attrs) {
         this(context, attrs, 0);
     }
 
-    public AlphaSeekBar(Context context, @Nullable AttributeSet attrs, int defStyleAttr) {
+    public ColorSeekBar(Context context, @Nullable AttributeSet attrs, int defStyleAttr) {
         super(context, attrs, defStyleAttr);
         init(context);
     }
 
     @TargetApi(21)
-    public AlphaSeekBar(Context context, @Nullable AttributeSet attrs, int defStyleAttr,
+    public ColorSeekBar(Context context, @Nullable AttributeSet attrs, int defStyleAttr,
                         int defStyleRes) {
         super(context, attrs, defStyleAttr, defStyleRes);
         init(context);
@@ -238,7 +238,7 @@ class AlphaSeekBar extends View {
         return mAlpha;
     }
 
-    public void setOnColorChangeListener(OnAlphaChangeListener listener) {
+    public void setOnAlphaChangeListener(OnAlphaChangeListener listener) {
         mListener = listener;
     }
 

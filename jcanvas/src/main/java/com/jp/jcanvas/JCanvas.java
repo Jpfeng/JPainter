@@ -200,6 +200,7 @@ public class JCanvas extends SurfaceView implements
 
         setStatus(STATUS_IDLE);
         new Thread(this).start();
+        requestFullInvalidate();
     }
 
     @Override

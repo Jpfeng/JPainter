@@ -22,7 +22,7 @@ public class ColorPicker extends LinearLayout {
     private HueWheel mHueWheel;
     private SaturationValuePanel mSVPanel;
     private ColorSeekBar mAlphaBar;
-    private ColorPreviewView mPreview;
+    private ColorPreview mPreview;
     private TextView mTvConfirm;
     private OnConfirmListener mListener;
 

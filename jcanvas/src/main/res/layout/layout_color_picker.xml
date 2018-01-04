@@ -54,7 +54,7 @@
         android:layout_margin="16dp"
         android:orientation="vertical">
 
-        <com.jp.jcanvas.colorpicker.ColorPreviewView
+        <com.jp.jcanvas.colorpicker.ColorPreview
             android:id="@+id/cpv_preview"
             android:layout_width="match_parent"
             android:layout_height="32dp" />

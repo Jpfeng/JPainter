@@ -40,6 +40,7 @@ class CanvasGestureDetector {
     private boolean mIsMoving = false;
 
     private Point mDown;
+    private Point mLast;
     private Point mPivot;
     private Point mMoveLast;
     private float mSpanLast;
@@ -58,6 +59,7 @@ class CanvasGestureDetector {
         mMinFlingVelocity = viewConfiguration.getScaledMinimumFlingVelocity();
         mMaxFlingVelocity = viewConfiguration.getScaledMaximumFlingVelocity();
         mDown = new Point();
+        mLast = new Point();
         mPivot = new Point();
         mMoveLast = new Point();
         mPivotVelocity = new Velocity();
@@ -107,6 +109,7 @@ class CanvasGestureDetector {
                 mDown.set(x, y);
 
                 mPath.moveTo(x, y);
+                mLast.set(x, y);
 
                 handled = mListener.onActionDown(new Point(mDown));
                 mHandler.sendEmptyMessageDelayed(START_DRAW, TAP_TIMEOUT);
@@ -187,7 +190,11 @@ class CanvasGestureDetector {
                     // 其他情况，包括 mIsDrawing = true ，和三个状态均为 false 两种情况
                     // 只有在首个触摸点还存在时才会触发绘制
                     int pointerIndex = event.findPointerIndex(mFirstPointerId);
-                    mPath.lineTo(event.getX(pointerIndex), event.getY(pointerIndex));
+                    float x1 = event.getX(pointerIndex);
+                    float y1 = event.getY(pointerIndex);
+                    float cX = (x1 + mLast.x) / 2f;
+                    float cY = (y1 + mLast.y) / 2f;
+                    mPath.quadTo(mLast.x, mLast.y, cX, cY);
 
                     final VelocityTracker velocityTracker = mVelocityTracker;
                     velocityTracker.computeCurrentVelocity(1000, mMaxFlingVelocity);
@@ -211,6 +218,8 @@ class CanvasGestureDetector {
                                     new Point(x, y), mPath, new Velocity(vX, vY));
                         }
                     }
+
+                    mLast.set(x, y);
                 }
                 break;
 

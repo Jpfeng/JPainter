@@ -24,7 +24,7 @@ import com.jp.jcanvas.R;
 /**
  *
  */
-public class ColorPreviewView extends LinearLayout {
+class ColorPreview extends LinearLayout {
 
     @ColorInt
     private int mColorOld;
@@ -34,21 +34,21 @@ public class ColorPreviewView extends LinearLayout {
     private ImageView mIvOld;
     private ImageView mIvNew;
 
-    public ColorPreviewView(Context context) {
+    public ColorPreview(Context context) {
         this(context, null);
     }
 
-    public ColorPreviewView(Context context, @Nullable AttributeSet attrs) {
+    public ColorPreview(Context context, @Nullable AttributeSet attrs) {
         this(context, attrs, 0);
     }
 
-    public ColorPreviewView(Context context, @Nullable AttributeSet attrs, int defStyleAttr) {
+    public ColorPreview(Context context, @Nullable AttributeSet attrs, int defStyleAttr) {
         super(context, attrs, defStyleAttr);
         init(context);
     }
 
     @TargetApi(21)
-    public ColorPreviewView(Context context, AttributeSet attrs, int defStyleAttr, int defStyleRes) {
+    public ColorPreview(Context context, AttributeSet attrs, int defStyleAttr, int defStyleRes) {
         super(context, attrs, defStyleAttr, defStyleRes);
         init(context);
     }

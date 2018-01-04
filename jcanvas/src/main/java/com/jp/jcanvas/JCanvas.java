@@ -7,7 +7,6 @@ import android.graphics.BitmapFactory;
 import android.graphics.BitmapShader;
 import android.graphics.Canvas;
 import android.graphics.Color;
-import android.graphics.CornerPathEffect;
 import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.Path;
@@ -71,7 +70,6 @@ public class JCanvas extends SurfaceView implements
     private float mMinScale;
     private float mMaxScale;
 
-    private float mCornerRadius;
     private float mPaintWidth;
     @ColorInt
     private int mPaintColor;
@@ -96,7 +94,7 @@ public class JCanvas extends SurfaceView implements
     private Offset mOffset;
     private Matrix mMatrix;
 
-    private int mStatus;
+    private volatile int mStatus;
     private boolean mNeedInvalidate;
     private boolean mNeedFullInvalidate;
 
@@ -136,7 +134,6 @@ public class JCanvas extends SurfaceView implements
         setFocusableInTouchMode(true);
 
         mFrameTime = DefaultValue.FRAME_TIME_MILLIS;
-        mCornerRadius = DefaultValue.CORNER_RADIUS;
 
         setMinScale(DefaultValue.MIN_SCALE);
         setMaxScale(DefaultValue.MAX_SCALE);
@@ -155,9 +152,6 @@ public class JCanvas extends SurfaceView implements
         setPaintWidth(DefaultValue.PAINT_WIDTH);
         setPaintCap(DefaultValue.PAINT_CAP);
         mDrawPaint.setXfermode(DefaultValue.XFER_PAINT);
-
-        CornerPathEffect effect = new CornerPathEffect(mCornerRadius);
-        mDrawPaint.setPathEffect(effect);
 
         mPath = new Path();
 

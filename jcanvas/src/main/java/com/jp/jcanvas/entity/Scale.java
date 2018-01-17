@@ -8,27 +8,27 @@ import android.os.Parcelable;
  */
 public class Scale implements Parcelable {
     public float factor;
-    public Point pivot;
+    private PointV pivot;
 
     public Scale() {
-        this(1.0f, new Point());
+        this(1.0f, new PointV());
     }
 
     public Scale(Scale src) {
         this(src.factor, src.pivot);
     }
 
-    public Scale(float factor, Point pivot) {
+    public Scale(float factor, PointV pivot) {
         this.factor = factor;
-        this.pivot = new Point(pivot);
+        this.pivot = new PointV(pivot);
     }
 
     protected Scale(Parcel in) {
         factor = in.readFloat();
-        pivot = in.readParcelable(Point.class.getClassLoader());
+        pivot = in.readParcelable(PointV.class.getClassLoader());
     }
 
-    public void set(float scale, Point pivot) {
+    public void set(float scale, PointV pivot) {
         this.factor = scale;
         this.pivot.set(pivot);
     }
@@ -38,7 +38,11 @@ public class Scale implements Parcelable {
         this.pivot.set(scale.pivot);
     }
 
-    public final boolean equals(float scale, Point pivot) {
+    public PointV getPivot() {
+        return pivot;
+    }
+
+    public final boolean equals(float scale, PointV pivot) {
         return this.factor == scale && this.pivot.equals(pivot);
     }
 

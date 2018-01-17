@@ -1,17 +1,19 @@
 package com.jp.jcanvas;
 
 import android.content.Context;
-import android.graphics.Path;
 import android.os.Handler;
 import android.os.Message;
 import android.support.annotation.NonNull;
+import android.view.GestureDetector;
 import android.view.MotionEvent;
 import android.view.VelocityTracker;
 import android.view.ViewConfiguration;
 
 import com.jp.jcanvas.entity.Offset;
 import com.jp.jcanvas.entity.Point;
+import com.jp.jcanvas.entity.PointV;
 import com.jp.jcanvas.entity.Scale;
+import com.jp.jcanvas.entity.Track;
 import com.jp.jcanvas.entity.Velocity;
 
 /**
@@ -45,7 +47,7 @@ class CanvasGestureDetector {
     private Point mMoveLast;
     private float mSpanLast;
     private Velocity mPivotVelocity;
-    private Path mPath;
+    private Track mTrack;
 
     CanvasGestureDetector(Context context, @NonNull OnCanvasGestureListener listener) {
         mHandler = new GestureHandler();
@@ -63,7 +65,7 @@ class CanvasGestureDetector {
         mPivot = new Point();
         mMoveLast = new Point();
         mPivotVelocity = new Velocity();
-        mPath = new Path();
+        mTrack = new Track();
     }
 
     private class GestureHandler extends Handler {
@@ -108,12 +110,16 @@ class CanvasGestureDetector {
                 // 记录首个触摸点按下的坐标
                 mDown.set(x, y);
 
-                mPath.moveTo(x, y);
+            {
+                final VelocityTracker velocityTracker = mVelocityTracker;
+                Velocity v = getVelocity(velocityTracker, event);
+                mTrack.departure(new PointV(x, y, v));
                 mLast.set(x, y);
+            }
 
-                handled = mListener.onActionDown(new Point(mDown));
-                mHandler.sendEmptyMessageDelayed(START_DRAW, TAP_TIMEOUT);
-                break;
+            handled = mListener.onActionDown(new Point(mDown));
+            mHandler.sendEmptyMessageDelayed(START_DRAW, TAP_TIMEOUT);
+            break;
 
             case MotionEvent.ACTION_POINTER_DOWN:
                 // 如果当前状态为非绘制，此时应进入缩放状态
@@ -145,8 +151,10 @@ class CanvasGestureDetector {
                             mIsMoving = true;
 
                             // scale end and move start
+                            final VelocityTracker velocityTracker = mVelocityTracker;
+                            Velocity v = getVelocity(velocityTracker, event);
                             mListener.onScaleEnd(new Point(mPivot));
-                            handled = mListener.onMove(new Point(x, y),
+                            handled = mListener.onMove(new PointV(x, y, v),
                                     new Offset(x - mMoveLast.x, y - mMoveLast.y));
                             mMoveLast.set(x, y);
                         }
@@ -157,32 +165,23 @@ class CanvasGestureDetector {
                         final float span = getSpan(event);
                         final Offset offset = new Offset(currentPivot.x - mPivot.x,
                                 currentPivot.y - mPivot.y);
-                        final Scale scale = new Scale(span / mSpanLast,
-                                new Point(currentPivot));
-                        handled = mListener.onScale(scale, offset);
-
                         // 计算控制点的速率
                         final VelocityTracker velocityTracker = mVelocityTracker;
-                        velocityTracker.computeCurrentVelocity(1000, mMaxFlingVelocity);
+                        Velocity vP = getVelocity(velocityTracker, event);
 
-                        final int count = event.getPointerCount();
-                        float sumVX = 0f;
-                        float sumVY = 0f;
-                        for (int i = 0; i < count; i++) {
-                            sumVX += velocityTracker.getXVelocity(i);
-                            sumVY += velocityTracker.getYVelocity(i);
-                        }
-
-                        final float vX = sumVX / count;
-                        final float vY = sumVY / count;
+                        final Scale scale = new Scale(span / mSpanLast,
+                                new PointV(currentPivot.x, currentPivot.y, vP));
+                        handled = mListener.onScale(scale, offset);
 
                         mPivot.set(currentPivot);
                         mSpanLast = span;
-                        mPivotVelocity.set(vX, vY);
+                        mPivotVelocity.set(vP);
                     }
 
                 } else if (mIsMoving) {
-                    handled = mListener.onMove(new Point(x, y),
+                    final VelocityTracker velocityTracker = mVelocityTracker;
+                    Velocity v = getVelocity(velocityTracker, event);
+                    handled = mListener.onMove(new PointV(x, y, v),
                             new Offset(x - mMoveLast.x, y - mMoveLast.y));
                     mMoveLast.set(x, y);
 
@@ -192,18 +191,12 @@ class CanvasGestureDetector {
                     int pointerIndex = event.findPointerIndex(mFirstPointerId);
                     float x1 = event.getX(pointerIndex);
                     float y1 = event.getY(pointerIndex);
-                    float cX = (x1 + mLast.x) / 2f;
-                    float cY = (y1 + mLast.y) / 2f;
-                    mPath.quadTo(mLast.x, mLast.y, cX, cY);
-
                     final VelocityTracker velocityTracker = mVelocityTracker;
-                    velocityTracker.computeCurrentVelocity(1000, mMaxFlingVelocity);
-                    float vX = velocityTracker.getXVelocity(mFirstPointerId);
-                    float vY = velocityTracker.getYVelocity(mFirstPointerId);
+                    Velocity v = getVelocity(velocityTracker, event);
+                    mTrack.addStation(new PointV(x1, y1, v));
 
                     if (mIsDrawing) {
-                        handled = mListener.onDrawPath(
-                                new Point(x, y), mPath, new Velocity(vX, vY));
+                        handled = mListener.onDrawPath(new PointV(x1, y1, v), new Track(mTrack));
 
                     } else {
                         // 判断是否应该进入 mIsDrawing 状态
@@ -215,7 +208,7 @@ class CanvasGestureDetector {
                             mHandler.removeMessages(START_DRAW);
                             mIsDrawing = true;
                             handled = mListener.onDrawPath(
-                                    new Point(x, y), mPath, new Velocity(vX, vY));
+                                    new PointV(x1, y1, v), new Track(mTrack));
                         }
                     }
 
@@ -254,7 +247,7 @@ class CanvasGestureDetector {
                             new Point(event.getX(pointerIndex), event.getY(pointerIndex)));
                 }
 
-                mPath.reset();
+                mTrack.reset();
                 mIsFirstPointerTouching = false;
                 mFirstPointerId = -1;
 
@@ -263,23 +256,19 @@ class CanvasGestureDetector {
                 }
 
                 // 计算速度，判断是否需要惯性滑动
-                float vX = 0f;
-                float vY = 0f;
+                Velocity v = new Velocity();
                 if (mIsMoving) {
                     final VelocityTracker velocityTracker = mVelocityTracker;
-                    velocityTracker.computeCurrentVelocity(1000, mMaxFlingVelocity);
-                    vX = velocityTracker.getXVelocity();
-                    vY = velocityTracker.getYVelocity();
+                    v.set(getVelocity(velocityTracker, event));
 
                 } else if (mIsScaling) {
-                    vX = mPivotVelocity.x;
-                    vY = mPivotVelocity.y;
+                    v.set(mPivotVelocity);
                 }
 
-                boolean fling = (Math.abs(vX) > mMinFlingVelocity)
-                        || (Math.abs(vY) > mMinFlingVelocity);
+                boolean fling = (Math.abs(v.x) > mMinFlingVelocity)
+                        || (Math.abs(v.y) > mMinFlingVelocity);
                 fling &= mIsScaling || mIsMoving;
-                handled |= mListener.onActionUp(new Point(x, y), fling, new Velocity(vX, vY));
+                handled |= mListener.onActionUp(new PointV(x, y, v), fling);
 
                 if (mVelocityTracker != null) {
                     mVelocityTracker.recycle();
@@ -302,7 +291,7 @@ class CanvasGestureDetector {
     private void cancel() {
         mHandler.removeMessages(START_DRAW);
         mHandler.removeMessages(START_MOVE);
-        mPath.reset();
+        mTrack.reset();
         mVelocityTracker.recycle();
         mVelocityTracker = null;
         mIsFirstPointerTouching = false;
@@ -376,12 +365,37 @@ class CanvasGestureDetector {
         return (float) Math.hypot(spanX, spanY);
     }
 
+    private Velocity getVelocity(VelocityTracker tracker, MotionEvent event) {
+        final boolean pointerUp = MotionEvent.ACTION_POINTER_UP == event.getActionMasked();
+        final int skipIndex = pointerUp ? event.getActionIndex() : -1;
+
+        tracker.computeCurrentVelocity(1000, mMaxFlingVelocity);
+
+        float sumVX = 0f;
+        float sumVY = 0f;
+        final int count = event.getPointerCount();
+
+        for (int i = 0; i < count; i++) {
+            if (skipIndex == i) {
+                continue;
+            }
+            sumVX += tracker.getXVelocity(i);
+            sumVY += tracker.getYVelocity(i);
+        }
+
+        final int div = pointerUp ? count - 1 : count;
+        final float vX = sumVX / div;
+        final float vY = sumVY / div;
+
+        return new Velocity(vX, vY);
+    }
+
     public interface OnCanvasGestureListener {
         boolean onActionDown(Point down);
 
         boolean onSingleTapUp(Point focus);
 
-        boolean onDrawPath(Point focus, final Path path, Velocity velocity);
+        boolean onDrawPath(PointV focus, final Track track);
 
         void onScaleStart(Point pivot);
 
@@ -389,8 +403,8 @@ class CanvasGestureDetector {
 
         void onScaleEnd(Point pivot);
 
-        boolean onMove(Point focus, Offset offset);
+        boolean onMove(PointV focus, Offset offset);
 
-        boolean onActionUp(Point focus, boolean fling, Velocity velocity);
+        boolean onActionUp(PointV focus, boolean fling);
     }
 }

@@ -3,10 +3,12 @@ package com.jp.jcanvas.entity;
 import android.os.Parcel;
 import android.os.Parcelable;
 
+import java.io.Serializable;
+
 /**
  *
  */
-public class Point implements Parcelable {
+public class Point implements Parcelable, Serializable {
     public float x;
     public float y;
 
@@ -33,9 +35,9 @@ public class Point implements Parcelable {
         this.y = y;
     }
 
-    public void set(Point p) {
-        this.x = p.x;
-        this.y = p.y;
+    public void set(Point src) {
+        this.x = src.x;
+        this.y = src.y;
     }
 
     public final boolean equals(float x, float y) {

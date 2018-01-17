@@ -9,7 +9,6 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Matrix;
 import android.graphics.Paint;
-import android.graphics.Path;
 import android.graphics.PorterDuff;
 import android.graphics.Shader;
 import android.support.annotation.ColorInt;
@@ -22,13 +21,18 @@ import android.view.animation.AccelerateDecelerateInterpolator;
 import android.widget.Scroller;
 
 import com.jp.jcanvas.CanvasGestureDetector.OnCanvasGestureListener;
+import com.jp.jcanvas.brush.BaseBrush;
+import com.jp.jcanvas.brush.BrushImpl;
+import com.jp.jcanvas.entity.HistoryData;
 import com.jp.jcanvas.entity.Offset;
-import com.jp.jcanvas.entity.PathData;
 import com.jp.jcanvas.entity.Point;
+import com.jp.jcanvas.entity.PointV;
 import com.jp.jcanvas.entity.Scale;
+import com.jp.jcanvas.entity.Track;
 import com.jp.jcanvas.entity.Velocity;
 
-import java.util.ArrayList;
+import java.util.LinkedList;
+import java.util.ListIterator;
 
 /**
  *
@@ -70,23 +74,18 @@ public class JCanvas extends SurfaceView implements
     private float mMinScale;
     private float mMaxScale;
 
-    private float mPaintWidth;
-    @ColorInt
-    private int mPaintColor;
-    private Paint.Cap mPaintCap;
-
     private SurfaceHolder mHolder;
     private Canvas mCanvas;
     private Canvas mCacheCanvas;
     private Canvas mWorkingCanvas;
+
+    private BaseBrush mBrush;
     private Paint mPaint;
-    private Paint mDrawPaint;
-    private Path mPath;
+    private Track mTrack;
 
     private Bitmap mCache;
     private Bitmap mWorkingSpace;
-    private ArrayList<PathData> mCacheStack;
-    private Path mWorkingPath;
+    private LinkedList<HistoryData> mCacheStack;
 
     private int mHeight;
     private int mWidth;
@@ -102,8 +101,8 @@ public class JCanvas extends SurfaceView implements
     private Scroller mScroller;
 
     // 撤销栈与重做栈
-    private ArrayList<PathData> mUndoStack;
-    private ArrayList<PathData> mRedoStack;
+    private LinkedList<HistoryData> mUndoStack;
+    private LinkedList<HistoryData> mRedoStack;
 
     private OnScaleChangeListener mScaleListener;
 
@@ -138,6 +137,8 @@ public class JCanvas extends SurfaceView implements
         setMinScale(DefaultValue.MIN_SCALE);
         setMaxScale(DefaultValue.MAX_SCALE);
 
+        mBrush = new BrushImpl();
+
         mPaint = new Paint();
         mPaint.setAntiAlias(true);
         mPaint.setStyle(Paint.Style.FILL_AND_STROKE);
@@ -145,15 +146,7 @@ public class JCanvas extends SurfaceView implements
         // 缩放时对性能影响很大，暂时禁用
 //        mPaint.setFilterBitmap(true);
 
-        mDrawPaint = new Paint();
-        mDrawPaint.setAntiAlias(true);
-        mDrawPaint.setStyle(Paint.Style.STROKE);
-        setPaintColor(DefaultValue.PAINT_COLOR);
-        setPaintWidth(DefaultValue.PAINT_WIDTH);
-        setPaintCap(DefaultValue.PAINT_CAP);
-        mDrawPaint.setXfermode(DefaultValue.XFER_PAINT);
-
-        mPath = new Path();
+        mTrack = new Track();
 
         mScale = 1.0f;
         mOffset = new Offset();
@@ -163,11 +156,10 @@ public class JCanvas extends SurfaceView implements
         mScroller = new Scroller(getContext(), mInterpolator);
 
         // 初始化撤销栈与重做栈
-        mUndoStack = new ArrayList<>();
-        mRedoStack = new ArrayList<>();
+        mUndoStack = new LinkedList<>();
+        mRedoStack = new LinkedList<>();
 
-        mCacheStack = new ArrayList<>();
-        mWorkingPath = new Path();
+        mCacheStack = new LinkedList<>();
 
         mNeedInvalidate = false;
         mNeedFullInvalidate = false;
@@ -239,20 +231,20 @@ public class JCanvas extends SurfaceView implements
     public boolean onSingleTapUp(Point focus) {
         if (!mAbortAnimating) {
             setStatus(STATUS_PAINTING);
-            Path path = new Path();
-            path.moveTo(mDown.x, mDown.y);
-            path.lineTo(focus.x, focus.y);
+            Track track = new Track();
+            track.departure(new PointV(focus.x, focus.y, new Velocity()));
+            track.addStation(new PointV(focus.x + 1, focus.y, new Velocity()));
 
             Matrix matrix = new Matrix();
             matrix.setTranslate(-mOffset.x, -mOffset.y);
             matrix.postScale(1.0f / mScale, 1.0f / mScale);
-            path.transform(matrix, mPath);
+            mTrack.set(track.transform(matrix));
         }
         return true;
     }
 
     @Override
-    public boolean onDrawPath(Point focus, Path path, Velocity velocity) {
+    public boolean onDrawPath(PointV focus, final Track track) {
         if (STATUS_PAINTING != getStatus()) {
             setStatus(STATUS_PAINTING);
         }
@@ -260,7 +252,7 @@ public class JCanvas extends SurfaceView implements
         Matrix matrix = new Matrix();
         matrix.setTranslate(-mOffset.x, -mOffset.y);
         matrix.postScale(1.0f / mScale, 1.0f / mScale);
-        path.transform(matrix, mPath);
+        mTrack.set(track.transform(matrix));
 
         return true;
     }
@@ -295,10 +287,10 @@ public class JCanvas extends SurfaceView implements
         float f = newScale / mScale;
         mScale = newScale;
 
-        mOffset.x = mOffset.x - (f - 1.0f) * (scale.pivot.x - mOffset.x) + pivotOffset.x;
-        mOffset.y = mOffset.y - (f - 1.0f) * (scale.pivot.y - mOffset.y) + pivotOffset.y;
+        mOffset.x = mOffset.x - (f - 1.0f) * (scale.getPivot().x - mOffset.x) + pivotOffset.x;
+        mOffset.y = mOffset.y - (f - 1.0f) * (scale.getPivot().y - mOffset.y) + pivotOffset.y;
 
-        mScalePivot.set(scale.pivot);
+        mScalePivot.set(scale.getPivot().x, scale.getPivot().y);
 
         if (null != mScaleListener) {
             mScaleListener.onScaleChange(mScale);
@@ -316,14 +308,14 @@ public class JCanvas extends SurfaceView implements
     }
 
     @Override
-    public boolean onMove(Point focus, Offset offset) {
+    public boolean onMove(PointV focus, Offset offset) {
         if (STATUS_MOVING != getStatus()) {
             setStatus(STATUS_MOVING);
         }
 
         mOffset.x = mOffset.x + offset.x;
         mOffset.y = mOffset.y + offset.y;
-        mScalePivot.set(focus);
+        mScalePivot.set(focus.x, focus.y);
         return true;
     }
 
@@ -331,13 +323,13 @@ public class JCanvas extends SurfaceView implements
     private float mAnimEndScale;
 
     @Override
-    public boolean onActionUp(Point focus, boolean fling, Velocity velocity) {
+    public boolean onActionUp(PointV focus, boolean fling) {
         if (STATUS_PAINTING == getStatus()) {
             // 将路径加入撤销栈，清空重做栈，清空路径
-            mUndoStack.add(new PathData(new Paint(mDrawPaint), new Path(mPath)));
+            mUndoStack.addFirst(new HistoryData(mBrush.cloneBrush(), new Track(mTrack)));
             mRedoStack.clear();
             updateCache(false);
-            mPath.reset();
+            mTrack.reset();
         }
 
         // 处理动画
@@ -425,7 +417,8 @@ public class JCanvas extends SurfaceView implements
 
         } else {
             if (fling) {
-                mScroller.fling(0, 0, (int) velocity.x, (int) velocity.y,
+                mScroller.fling(0, 0,
+                        (int) focus.getVelocity().x, (int) focus.getVelocity().y,
                         (int) (mWidth * (1.0f - mScale) - mOffset.x), (int) -mOffset.x,
                         (int) (mHeight * (1.0f - mScale) - mOffset.y), (int) -mOffset.y);
                 animating = true;
@@ -548,7 +541,7 @@ public class JCanvas extends SurfaceView implements
             }
             drawWorkingPath();
             drawCanvasBackground(mCanvas);
-            mCanvas.drawBitmap(mCache, mMatrix, mPaint);
+//            mCanvas.drawBitmap(mCache, mMatrix, mPaint);
             mCanvas.drawBitmap(mWorkingSpace, mMatrix, mPaint);
 
         } catch (Exception e) {
@@ -572,16 +565,16 @@ public class JCanvas extends SurfaceView implements
         if (full) {
             // 清空画布
             mCacheCanvas.drawColor(Color.TRANSPARENT, PorterDuff.Mode.CLEAR);
-            // 绘制画布背景色
-            mCacheCanvas.drawColor(DefaultValue.CANVAS_COLOR, PorterDuff.Mode.SRC);
 
             int layer = mCacheCanvas.saveLayer(0, 0,
                     mCacheCanvas.getWidth(), mCacheCanvas.getHeight(), null, Canvas.ALL_SAVE_FLAG);
 
             mCacheStack.addAll(mUndoStack);
 
-            // 绘制撤销栈中记录的路径
-            for (PathData path : mCacheStack) {
+            // 绘制撤销栈中记录的路径。需要逆序遍历
+            ListIterator it = mCacheStack.listIterator(mCacheStack.size());
+            while (it.hasPrevious()) {
+                HistoryData path = (HistoryData) it.previous();
                 path.draw(mCacheCanvas);
             }
 
@@ -589,29 +582,32 @@ public class JCanvas extends SurfaceView implements
             mCacheStack.clear();
 
         } else {
-            PathData data = mUndoStack.get(mUndoStack.size() - 1);
-            int layer = mCacheCanvas.saveLayer(0, 0,
-                    mCacheCanvas.getWidth(), mCacheCanvas.getHeight(), null, Canvas.ALL_SAVE_FLAG);
+            HistoryData data = mUndoStack.getFirst();
+//            int layer = mCacheCanvas.saveLayer(0, 0,
+//                    mCacheCanvas.getWidth(), mCacheCanvas.getHeight(), null, Canvas.ALL_SAVE_FLAG);
             data.draw(mCacheCanvas);
-            mCacheCanvas.restoreToCount(layer);
+//            mCacheCanvas.restoreToCount(layer);
         }
     }
 
     private void drawWorkingPath() {
         // 清空画布
         mWorkingCanvas.drawColor(Color.TRANSPARENT, PorterDuff.Mode.CLEAR);
+        // 绘制画布背景色
+        mWorkingCanvas.drawColor(DefaultValue.CANVAS_COLOR, PorterDuff.Mode.SRC);
 
+        int layer = mWorkingCanvas.saveLayer(0, 0, mWorkingCanvas.getWidth(),
+                mWorkingCanvas.getHeight(), null, Canvas.ALL_SAVE_FLAG);
+
+        // 绘制缓存
+        mWorkingCanvas.drawBitmap(mCache, 0, 0, mPaint);
         // 绘制当前工作路径
-        if (!mPath.isEmpty()) {
-            int layer = mWorkingCanvas.saveLayer(0, 0, mWorkingCanvas.getWidth(),
-                    mWorkingCanvas.getHeight(), null, Canvas.ALL_SAVE_FLAG);
-
-            mWorkingPath.set(mPath);
-            mWorkingCanvas.drawPath(mWorkingPath, mDrawPaint);
-
-            mWorkingCanvas.restoreToCount(layer);
-            mWorkingPath.reset();
+        if (!mTrack.isEmpty()) {
+            Track track = new Track(mTrack);
+            mBrush.drawTrack(mWorkingCanvas, track);
         }
+
+        mWorkingCanvas.restoreToCount(layer);
     }
 
     /**
@@ -662,8 +658,7 @@ public class JCanvas extends SurfaceView implements
      * @param color 画笔颜色
      */
     public void setPaintColor(@ColorInt int color) {
-        mPaintColor = color;
-        mDrawPaint.setColor(color);
+        // TODO
     }
 
     /**
@@ -673,7 +668,8 @@ public class JCanvas extends SurfaceView implements
      */
     public @ColorInt
     int getPaintColor() {
-        return mPaintColor;
+        // TODO
+        return 0;
     }
 
     /**
@@ -682,8 +678,7 @@ public class JCanvas extends SurfaceView implements
      * @param width 画笔宽度
      */
     public void setPaintWidth(float width) {
-        mPaintWidth = width;
-        mDrawPaint.setStrokeWidth(mPaintWidth);
+        // TODO
     }
 
     /**
@@ -692,7 +687,8 @@ public class JCanvas extends SurfaceView implements
      * @return 画笔宽度
      */
     public float getPaintWidth() {
-        return mPaintWidth;
+        // TODO
+        return 0;
     }
 
     /**
@@ -701,8 +697,7 @@ public class JCanvas extends SurfaceView implements
      * @param cap 笔头形状
      */
     public void setPaintCap(Paint.Cap cap) {
-        mPaintCap = cap;
-        mDrawPaint.setStrokeCap(cap);
+        // TODO
     }
 
     /**
@@ -711,7 +706,8 @@ public class JCanvas extends SurfaceView implements
      * @return 笔头形状
      */
     public Paint.Cap getPaintCap() {
-        return mPaintCap;
+        // TODO
+        return null;
     }
 
     /**
@@ -756,14 +752,16 @@ public class JCanvas extends SurfaceView implements
      * 设置当前为画笔
      */
     public void usePaint() {
-        mDrawPaint.setXfermode(DefaultValue.XFER_PAINT);
+        // TODO
+        mBrush.painter();
     }
 
     /**
      * 设置当前为橡皮
      */
     public void useEraser() {
-        mDrawPaint.setXfermode(DefaultValue.XFER_ERASER);
+        // TODO
+        mBrush.eraser();
     }
 
     /**
@@ -791,8 +789,8 @@ public class JCanvas extends SurfaceView implements
      */
     public void undo() {
         if (0 < mUndoStack.size()) {
-            PathData data = mUndoStack.remove(mUndoStack.size() - 1);
-            mRedoStack.add(data);
+            HistoryData data = mUndoStack.removeFirst();
+            mRedoStack.addFirst(data);
             requestFullInvalidate();
         }
     }
@@ -802,8 +800,8 @@ public class JCanvas extends SurfaceView implements
      */
     public void redo() {
         if (0 < mRedoStack.size()) {
-            PathData data = mRedoStack.remove(mRedoStack.size() - 1);
-            mUndoStack.add(data);
+            HistoryData data = mRedoStack.removeFirst();
+            mUndoStack.addFirst(data);
             requestFullInvalidate();
         }
     }
@@ -824,7 +822,7 @@ public class JCanvas extends SurfaceView implements
         mScale = 1.0f;
         mOffset.set(0f, 0f);
         mMatrix.reset();
-        mPath.reset();
+        mTrack.reset();
         mUndoStack.clear();
         mRedoStack.clear();
         requestInvalidate();

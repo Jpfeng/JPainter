@@ -3,10 +3,12 @@ package com.jp.jcanvas.entity;
 import android.os.Parcel;
 import android.os.Parcelable;
 
+import java.io.Serializable;
+
 /**
  *
  */
-public class Velocity implements Parcelable {
+public class Velocity implements Parcelable, Serializable {
     public float x;
     public float y;
 

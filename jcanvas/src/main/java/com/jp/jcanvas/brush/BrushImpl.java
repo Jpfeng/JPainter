@@ -10,6 +10,7 @@ import android.graphics.PorterDuffXfermode;
 import android.graphics.RectF;
 
 import com.jp.jcanvas.entity.Point;
+import com.jp.jcanvas.entity.PointV;
 import com.jp.jcanvas.entity.Track;
 
 import java.util.LinkedList;
@@ -48,8 +49,8 @@ public class BrushImpl extends BaseBrush {
         mPaint.setStrokeWidth(64f);
         mPaint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.SRC_OVER));
         mPaint.setColor(Color.argb(128, 192, 192, 192));
-        mPaint.setStrokeJoin(Paint.Join.ROUND);
-        mPaint.setStrokeCap(Paint.Cap.ROUND);
+//        mPaint.setStrokeJoin(Paint.Join.ROUND);
+//        mPaint.setStrokeCap(Paint.Cap.ROUND);
         mPathMeasure = new PathMeasure();
         mPos = new float[2];
         mTan = new float[2];
@@ -58,10 +59,18 @@ public class BrushImpl extends BaseBrush {
     }
 
     @Override
+    public BaseBrush cloneBrush() {
+        BrushImpl brush = new BrushImpl();
+        brush.mPaint.set(mPaint);
+        brush.eraser = this.eraser;
+        return brush;
+    }
+
+    @Override
     public void drawTrack(Canvas canvas, Track track) {
-//        drawPath(canvas, track.getPath());
+        drawPath(canvas, track.getPath());
 //        drawPoints(canvas, track.getStations());
-        drawSections(canvas, track.getSections());
+//        drawSections(canvas, track.getSections());
     }
 
     private float minW = 9f;
@@ -113,17 +122,17 @@ public class BrushImpl extends BaseBrush {
 //        }
     }
 
-    private void drawPoints(Canvas canvas, LinkedList<Point> points) {
+    private void drawPoints(Canvas canvas, LinkedList<PointV> points) {
         int index = 0;
 //        float lastW = 0f;
-        Point lastP = new Point();
+        PointV lastP = new PointV();
         Point lastC = new Point();
 
-        for (Point p : points) {
+        for (PointV p : points) {
             if (0 == index) {
 //                lastW = 0f;
                 lastP.set(p);
-                lastC.set(p);
+                lastC.set(p.x, p.y);
 
             } else {
 //                float d0 = (float) Math.hypot(lastP.x - p.x, lastP.y - p.y);
@@ -137,13 +146,13 @@ public class BrushImpl extends BaseBrush {
 //                    lastW = w1;
 //                }
 
-                Path path = new Path();
-                path.moveTo(lastC.x, lastC.y);
-                float cX = (p.x + lastP.x) / 2f;
-                float cY = (p.y + lastP.y) / 2f;
-                path.quadTo(lastP.x, lastP.y, cX, cY);
-
-                canvas.drawPath(path, mPaint);
+//                Path path = new Path();
+//                path.moveTo(lastC.x, lastC.y);
+//                float cX = (p.x + lastP.x) / 2f;
+//                float cY = (p.y + lastP.y) / 2f;
+//                path.quadTo(lastP.x, lastP.y, cX, cY);
+//
+//                canvas.drawPath(path, mPaint);
 
 //                mPathMeasure.setPath(path, false);
 //                float length = mPathMeasure.getLength();
@@ -167,7 +176,7 @@ public class BrushImpl extends BaseBrush {
 
 //                lastW = w1;
                 lastP.set(p);
-                lastC.set(new Point(cX, cY));
+//                lastC.set(new Point(cX, cY));
             }
 
             index++;
@@ -176,8 +185,12 @@ public class BrushImpl extends BaseBrush {
 
     private void drawPath(Canvas canvas, Path path) {
 
-        mPaint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.DST_OUT));
-        canvas.drawPath(path,mPaint);
+        if (eraser) {
+            mPaint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.DST_OUT));
+        } else {
+            mPaint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.SRC_OVER));
+        }
+        canvas.drawPath(path, mPaint);
 
 //        mPathMeasure.setPath(path, false);
 //        int count = (int) (mPathMeasure.getLength() / d);

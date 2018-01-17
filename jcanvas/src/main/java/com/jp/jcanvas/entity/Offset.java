@@ -3,10 +3,12 @@ package com.jp.jcanvas.entity;
 import android.os.Parcel;
 import android.os.Parcelable;
 
+import java.io.Serializable;
+
 /**
  *
  */
-public class Offset implements Parcelable {
+public class Offset implements Parcelable, Serializable {
     public float x;
     public float y;
 

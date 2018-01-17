@@ -49,10 +49,10 @@ public class PainterActivity extends AppCompatActivity {
         tvScale.setText("1.0x");
         cp.setColor(Color.RED);
         cp.setOnConfirmListener(view -> {
-            painter.setPaintColor(cp.getColor());
+//            painter.setPaintColor(cp.getColor());
             cPicker.setVisibility(View.GONE);
         });
-        painter.setPaintColor(cp.getColor());
+//        painter.setPaintColor(cp.getColor());
 
         tvPaint.setBackgroundColor(Color.CYAN);
 
@@ -82,13 +82,13 @@ public class PainterActivity extends AppCompatActivity {
                 public void onStopTrackingTouch(SeekBar seekBar) {
                 }
             });
-            seekBar.setProgress((int) painter.getPaintWidth());
+//            seekBar.setProgress((int) painter.getPaintWidth());
 
             new AlertDialog.Builder(this)
                     .setTitle("设置笔尖大小")
                     .setView(seekBar)
                     .setPositiveButton("ok", (dialog, which) -> {
-                        painter.setPaintWidth(mPaintWidth);
+//                        painter.setPaintWidth(mPaintWidth);
                     })
                     .setNegativeButton("no", null)
                     .create()
@@ -96,13 +96,13 @@ public class PainterActivity extends AppCompatActivity {
         });
 
         tvPaint.setOnClickListener(v -> {
-            painter.usePaint();
+//            painter.usePaint();
             tvPaint.setBackgroundColor(Color.CYAN);
             tvEraser.setBackgroundColor(Color.parseColor("#FFAAAAAA"));
         });
 
         tvEraser.setOnClickListener(v -> {
-            painter.useEraser();
+//            painter.useEraser();
             tvEraser.setBackgroundColor(Color.CYAN);
             tvPaint.setBackgroundColor(Color.parseColor("#FFAAAAAA"));
         });

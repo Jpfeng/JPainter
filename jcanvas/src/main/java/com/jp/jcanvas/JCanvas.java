@@ -10,8 +10,8 @@ import android.graphics.Color;
 import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.PorterDuff;
+import android.graphics.RectF;
 import android.graphics.Shader;
-import android.support.annotation.ColorInt;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.view.MotionEvent;
@@ -82,6 +82,7 @@ public class JCanvas extends SurfaceView implements
     private BaseBrush mBrush;
     private Paint mPaint;
     private Track mTrack;
+    private Paint mPatternPaint;
 
     private Bitmap mCache;
     private Bitmap mWorkingSpace;
@@ -105,6 +106,8 @@ public class JCanvas extends SurfaceView implements
     private LinkedList<HistoryData> mRedoStack;
 
     private OnScaleChangeListener mScaleListener;
+    private RectF mOrin;
+    private RectF mTrans;
 
     public JCanvas(Context context) {
         this(context, null);
@@ -141,16 +144,24 @@ public class JCanvas extends SurfaceView implements
 
         mPaint = new Paint();
         mPaint.setAntiAlias(true);
-        mPaint.setStyle(Paint.Style.FILL_AND_STROKE);
+        mPaint.setStyle(Paint.Style.FILL);
         mPaint.setColor(DefaultValue.CANVAS_COLOR);
         // 缩放时对性能影响很大，暂时禁用
 //        mPaint.setFilterBitmap(true);
+
+        mPatternPaint = new Paint();
+        Bitmap bitmap = BitmapFactory.decodeResource(getResources(), R.drawable.canvas_background);
+        BitmapShader s = new BitmapShader(bitmap, Shader.TileMode.REPEAT, Shader.TileMode.REPEAT);
+        mPatternPaint.setShader(s);
 
         mTrack = new Track();
 
         mScale = 1.0f;
         mOffset = new Offset();
         mMatrix = new Matrix();
+
+        mOrin = new RectF();
+        mTrans = new RectF();
 
         mInterpolator = new AccelerateDecelerateInterpolator();
         mScroller = new Scroller(getContext(), mInterpolator);
@@ -193,6 +204,7 @@ public class JCanvas extends SurfaceView implements
     public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {
         mHeight = height;
         mWidth = width;
+        mOrin.set(0, 0, mWidth, mHeight);
 
         mCache = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
         mWorkingSpace = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
@@ -223,7 +235,6 @@ public class JCanvas extends SurfaceView implements
         }
 
         mDown = new Point(down);
-
         return true;
     }
 
@@ -232,13 +243,13 @@ public class JCanvas extends SurfaceView implements
         if (!mAbortAnimating) {
             setStatus(STATUS_PAINTING);
             Track track = new Track();
-            track.departure(new PointV(focus.x, focus.y, new Velocity()));
-            track.addStation(new PointV(focus.x + 1, focus.y, new Velocity()));
+            track.departure(new PointV(mDown.x, mDown.y, new Velocity()));
+            track.addStation(new PointV(focus.x, focus.y, new Velocity()));
 
             Matrix matrix = new Matrix();
             matrix.setTranslate(-mOffset.x, -mOffset.y);
             matrix.postScale(1.0f / mScale, 1.0f / mScale);
-            mTrack.set(track.transform(matrix));
+            mTrack.set(track.applyTransform(matrix));
         }
         return true;
     }
@@ -252,7 +263,7 @@ public class JCanvas extends SurfaceView implements
         Matrix matrix = new Matrix();
         matrix.setTranslate(-mOffset.x, -mOffset.y);
         matrix.postScale(1.0f / mScale, 1.0f / mScale);
-        mTrack.set(track.transform(matrix));
+        mTrack.set(track.applyTransform(matrix));
 
         return true;
     }
@@ -540,8 +551,7 @@ public class JCanvas extends SurfaceView implements
                 updateCache(true);
             }
             drawWorkingPath();
-            drawCanvasBackground(mCanvas);
-//            mCanvas.drawBitmap(mCache, mMatrix, mPaint);
+            drawCanvasBackground(mCanvas, mMatrix);
             mCanvas.drawBitmap(mWorkingSpace, mMatrix, mPaint);
 
         } catch (Exception e) {
@@ -566,11 +576,7 @@ public class JCanvas extends SurfaceView implements
             // 清空画布
             mCacheCanvas.drawColor(Color.TRANSPARENT, PorterDuff.Mode.CLEAR);
 
-            int layer = mCacheCanvas.saveLayer(0, 0,
-                    mCacheCanvas.getWidth(), mCacheCanvas.getHeight(), null, Canvas.ALL_SAVE_FLAG);
-
             mCacheStack.addAll(mUndoStack);
-
             // 绘制撤销栈中记录的路径。需要逆序遍历
             ListIterator it = mCacheStack.listIterator(mCacheStack.size());
             while (it.hasPrevious()) {
@@ -578,26 +584,17 @@ public class JCanvas extends SurfaceView implements
                 path.draw(mCacheCanvas);
             }
 
-            mCacheCanvas.restoreToCount(layer);
             mCacheStack.clear();
 
         } else {
             HistoryData data = mUndoStack.getFirst();
-//            int layer = mCacheCanvas.saveLayer(0, 0,
-//                    mCacheCanvas.getWidth(), mCacheCanvas.getHeight(), null, Canvas.ALL_SAVE_FLAG);
             data.draw(mCacheCanvas);
-//            mCacheCanvas.restoreToCount(layer);
         }
     }
 
     private void drawWorkingPath() {
         // 清空画布
         mWorkingCanvas.drawColor(Color.TRANSPARENT, PorterDuff.Mode.CLEAR);
-        // 绘制画布背景色
-        mWorkingCanvas.drawColor(DefaultValue.CANVAS_COLOR, PorterDuff.Mode.SRC);
-
-        int layer = mWorkingCanvas.saveLayer(0, 0, mWorkingCanvas.getWidth(),
-                mWorkingCanvas.getHeight(), null, Canvas.ALL_SAVE_FLAG);
 
         // 绘制缓存
         mWorkingCanvas.drawBitmap(mCache, 0, 0, mPaint);
@@ -606,21 +603,24 @@ public class JCanvas extends SurfaceView implements
             Track track = new Track(mTrack);
             mBrush.drawTrack(mWorkingCanvas, track);
         }
-
-        mWorkingCanvas.restoreToCount(layer);
     }
 
     /**
      * 绘制画布背景。
      */
-    private void drawCanvasBackground(Canvas canvas) {
+    private void drawCanvasBackground(Canvas canvas, Matrix matrix) {
         // 平铺灰白格子
-        Bitmap bitmap = BitmapFactory.decodeResource(getResources(), R.drawable.canvas_background);
-        BitmapShader shader = new BitmapShader(
-                bitmap, Shader.TileMode.REPEAT, Shader.TileMode.REPEAT);
-        Paint p = new Paint();
-        p.setShader(shader);
-        canvas.drawPaint(p);
+        canvas.drawPaint(mPatternPaint);
+        // 绘制背景
+        matrix.mapRect(mTrans, mOrin);
+        canvas.drawRect(mTrans, mPaint);
+    }
+
+    /**
+     * 请求进行绘制
+     */
+    private void requestInvalidate() {
+        mNeedInvalidate = true;
     }
 
     private void requestFullInvalidate() {
@@ -633,7 +633,7 @@ public class JCanvas extends SurfaceView implements
      *
      * @param status 状态
      */
-    public void setStatus(int status) {
+    private void setStatus(int status) {
         mStatus = status;
         // 当设置为 STATUS_IDLE 时，很大可能绘制线程仍在绘制上一帧。
         // 当绘制线程绘制完上一帧而开始绘制当前帧时，检测到状态为 STATUS_IDLE 就会停止绘制。
@@ -652,62 +652,12 @@ public class JCanvas extends SurfaceView implements
         return mStatus;
     }
 
-    /**
-     * 设置画笔颜色
-     *
-     * @param color 画笔颜色
-     */
-    public void setPaintColor(@ColorInt int color) {
-        // TODO
+    public void setBrush(BaseBrush brush) {
+        this.mBrush = brush;
     }
 
-    /**
-     * 获取当前画笔颜色
-     *
-     * @return 画笔颜色
-     */
-    public @ColorInt
-    int getPaintColor() {
-        // TODO
-        return 0;
-    }
-
-    /**
-     * 设置画笔宽度
-     *
-     * @param width 画笔宽度
-     */
-    public void setPaintWidth(float width) {
-        // TODO
-    }
-
-    /**
-     * 获取当前画笔宽度
-     *
-     * @return 画笔宽度
-     */
-    public float getPaintWidth() {
-        // TODO
-        return 0;
-    }
-
-    /**
-     * 设置画笔笔头形状
-     *
-     * @param cap 笔头形状
-     */
-    public void setPaintCap(Paint.Cap cap) {
-        // TODO
-    }
-
-    /**
-     * 获取当前画笔笔头形状
-     *
-     * @return 笔头形状
-     */
-    public Paint.Cap getPaintCap() {
-        // TODO
-        return null;
+    public BaseBrush getBrush() {
+        return mBrush;
     }
 
     /**
@@ -721,15 +671,6 @@ public class JCanvas extends SurfaceView implements
     }
 
     /**
-     * 获取画布的最小缩放倍率
-     *
-     * @return 倍率
-     */
-    public float getMinScale() {
-        return mMinScale;
-    }
-
-    /**
      * 设定画布的最大缩放倍率
      * 最大倍率至少为 1.0f
      *
@@ -737,31 +678,6 @@ public class JCanvas extends SurfaceView implements
      */
     public void setMaxScale(float scale) {
         mMaxScale = Math.max(scale, 1.0f);
-    }
-
-    /**
-     * 获取画布的最大缩放倍率
-     *
-     * @return 倍率
-     */
-    public float getMaxScale() {
-        return mMaxScale;
-    }
-
-    /**
-     * 设置当前为画笔
-     */
-    public void usePaint() {
-        // TODO
-        mBrush.painter();
-    }
-
-    /**
-     * 设置当前为橡皮
-     */
-    public void useEraser() {
-        // TODO
-        mBrush.eraser();
     }
 
     /**
@@ -826,13 +742,6 @@ public class JCanvas extends SurfaceView implements
         mUndoStack.clear();
         mRedoStack.clear();
         requestInvalidate();
-    }
-
-    /**
-     * 请求进行绘制
-     */
-    public void requestInvalidate() {
-        mNeedInvalidate = true;
     }
 
     /**

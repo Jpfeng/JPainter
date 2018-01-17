@@ -5,6 +5,8 @@ import android.graphics.Canvas;
 import com.jp.jcanvas.brush.BaseBrush;
 import com.jp.jcanvas.brush.BrushImpl;
 
+import java.io.Serializable;
+
 /**
  *
  */

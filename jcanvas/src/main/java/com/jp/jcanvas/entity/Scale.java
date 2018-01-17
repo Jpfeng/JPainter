@@ -3,10 +3,12 @@ package com.jp.jcanvas.entity;
 import android.os.Parcel;
 import android.os.Parcelable;
 
+import java.io.Serializable;
+
 /**
  *
  */
-public class Scale implements Parcelable {
+public class Scale implements Parcelable, Serializable {
     public float factor;
     private PointV pivot;
 

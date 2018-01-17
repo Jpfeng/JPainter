@@ -158,7 +158,7 @@ public class Track implements Parcelable, Serializable {
         mLastControl.set(cX, cY);
     }
 
-    public Track transform(Matrix matrix) {
+    public Track applyTransform(Matrix matrix) {
         float[] pts = new float[2];
         for (PointV p : mPoints) {
             pts[0] = p.x;

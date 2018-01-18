@@ -59,10 +59,14 @@ public class BrushImpl extends BaseBrush {
     }
 
     @Override
+    public void initBrush() {
+
+    }
+
+    @Override
     public BaseBrush cloneBrush() {
         BrushImpl brush = new BrushImpl();
         brush.mPaint.set(mPaint);
-        brush.eraser = this.eraser;
         return brush;
     }
 
@@ -71,6 +75,11 @@ public class BrushImpl extends BaseBrush {
         drawPath(canvas, track.getPath());
 //        drawPoints(canvas, track.getStations());
 //        drawSections(canvas, track.getSections());
+    }
+
+    @Override
+    public void drawPreview() {
+
     }
 
     private float minW = 9f;
@@ -128,11 +137,11 @@ public class BrushImpl extends BaseBrush {
 
     private void drawPath(Canvas canvas, Path path) {
 
-        if (eraser) {
-            mPaint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.DST_OUT));
-        } else {
-            mPaint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.SRC_OVER));
-        }
+//        if (eraser) {
+//            mPaint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.DST_OUT));
+//        } else {
+//            mPaint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.SRC_OVER));
+//        }
         canvas.drawPath(path, mPaint);
 
 //        mPathMeasure.setPath(path, false);

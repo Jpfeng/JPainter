@@ -4,6 +4,7 @@ import android.Manifest;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.os.Bundle;
+import android.support.annotation.ColorInt;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
@@ -15,6 +16,9 @@ import android.widget.SeekBar;
 import android.widget.TextView;
 
 import com.jp.jcanvas.JCanvas;
+import com.jp.jcanvas.brush.BaseBrush;
+import com.jp.jcanvas.brush.BrushTag01;
+import com.jp.jcanvas.brush.EraserTag01;
 import com.jp.jcanvas.colorpicker.ColorPicker;
 import com.jp.jpainter.utils.SDUtil;
 
@@ -25,6 +29,11 @@ import java.util.Locale;
 
 public class PainterActivity extends AppCompatActivity {
 
+    private BaseBrush mBrush;
+    private BaseBrush mEraser;
+
+    @ColorInt
+    private int mColor;
     private int mPaintWidth;
 
     @Override
@@ -46,14 +55,23 @@ public class PainterActivity extends AppCompatActivity {
         ColorPicker cp = findViewById(R.id.cp_picker);
         JCanvas painter = findViewById(R.id.sp_painter);
 
+        mBrush = new BrushTag01();
+        mEraser = new EraserTag01();
+
+        mPaintWidth = 16;
+        mBrush.setWidth(mPaintWidth);
+        mEraser.setWidth(mPaintWidth);
+
         tvScale.setText("1.0x");
         cp.setColor(Color.RED);
         cp.setOnConfirmListener(view -> {
-//            painter.setPaintColor(cp.getColor());
+            mColor = cp.getColor();
+            mBrush.setColor(mColor);
             cPicker.setVisibility(View.GONE);
         });
-//        painter.setPaintColor(cp.getColor());
+        mBrush.setColor(cp.getColor());
 
+        painter.setBrush(mBrush);
         tvPaint.setBackgroundColor(Color.CYAN);
 
         tvUndo.setOnClickListener(v -> painter.undo());
@@ -82,13 +100,15 @@ public class PainterActivity extends AppCompatActivity {
                 public void onStopTrackingTouch(SeekBar seekBar) {
                 }
             });
-//            seekBar.setProgress((int) painter.getPaintWidth());
+            seekBar.setProgress(mPaintWidth);
 
             new AlertDialog.Builder(this)
                     .setTitle("设置笔尖大小")
                     .setView(seekBar)
                     .setPositiveButton("ok", (dialog, which) -> {
-//                        painter.setPaintWidth(mPaintWidth);
+                        mBrush.setWidth(mPaintWidth);
+                        mEraser.setWidth(mPaintWidth);
+//                        painter.getBrush().setWidth(mPaintWidth);
                     })
                     .setNegativeButton("no", null)
                     .create()
@@ -96,13 +116,13 @@ public class PainterActivity extends AppCompatActivity {
         });
 
         tvPaint.setOnClickListener(v -> {
-//            painter.usePaint();
+            painter.setBrush(mBrush);
             tvPaint.setBackgroundColor(Color.CYAN);
             tvEraser.setBackgroundColor(Color.parseColor("#FFAAAAAA"));
         });
 
         tvEraser.setOnClickListener(v -> {
-//            painter.useEraser();
+            painter.setBrush(mEraser);
             tvEraser.setBackgroundColor(Color.CYAN);
             tvPaint.setBackgroundColor(Color.parseColor("#FFAAAAAA"));
         });

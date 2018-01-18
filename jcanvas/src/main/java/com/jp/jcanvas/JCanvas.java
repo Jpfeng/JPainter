@@ -22,7 +22,7 @@ import android.widget.Scroller;
 
 import com.jp.jcanvas.CanvasGestureDetector.OnCanvasGestureListener;
 import com.jp.jcanvas.brush.BaseBrush;
-import com.jp.jcanvas.brush.BrushImpl;
+import com.jp.jcanvas.brush.BrushTag01;
 import com.jp.jcanvas.entity.HistoryData;
 import com.jp.jcanvas.entity.Offset;
 import com.jp.jcanvas.entity.Point;
@@ -81,18 +81,19 @@ public class JCanvas extends SurfaceView implements
 
     private BaseBrush mBrush;
     private Paint mPaint;
-    private Track mTrack;
     private Paint mPatternPaint;
+    private Track mTrack;
 
     private Bitmap mCache;
     private Bitmap mWorkingSpace;
-    private LinkedList<HistoryData> mCacheStack;
 
     private int mHeight;
     private int mWidth;
     private float mScale;
     private Offset mOffset;
     private Matrix mMatrix;
+    private RectF mOrin;
+    private RectF mTrans;
 
     private volatile int mStatus;
     private boolean mNeedInvalidate;
@@ -104,10 +105,20 @@ public class JCanvas extends SurfaceView implements
     // 撤销栈与重做栈
     private LinkedList<HistoryData> mUndoStack;
     private LinkedList<HistoryData> mRedoStack;
+    private LinkedList<HistoryData> mCacheStack;
 
     private OnScaleChangeListener mScaleListener;
-    private RectF mOrin;
-    private RectF mTrans;
+
+    // temp vars
+    private Point mDown;
+    private boolean mAbortAnimating;
+    private float mFactor;
+    private float mStartScale;
+    private Point mScalePivot;
+    private float mAnimStartScale;
+    private float mAnimEndScale;
+    private int mLastScrX;
+    private int mLastScrY;
 
     public JCanvas(Context context) {
         this(context, null);
@@ -140,7 +151,7 @@ public class JCanvas extends SurfaceView implements
         setMinScale(DefaultValue.MIN_SCALE);
         setMaxScale(DefaultValue.MAX_SCALE);
 
-        mBrush = new BrushImpl();
+        mBrush = new BrushTag01();
 
         mPaint = new Paint();
         mPaint.setAntiAlias(true);
@@ -153,6 +164,9 @@ public class JCanvas extends SurfaceView implements
         Bitmap bitmap = BitmapFactory.decodeResource(getResources(), R.drawable.canvas_background);
         BitmapShader s = new BitmapShader(bitmap, Shader.TileMode.REPEAT, Shader.TileMode.REPEAT);
         mPatternPaint.setShader(s);
+
+        mCacheCanvas = new Canvas();
+        mWorkingCanvas = new Canvas();
 
         mTrack = new Track();
 
@@ -169,11 +183,13 @@ public class JCanvas extends SurfaceView implements
         // 初始化撤销栈与重做栈
         mUndoStack = new LinkedList<>();
         mRedoStack = new LinkedList<>();
-
         mCacheStack = new LinkedList<>();
 
         mNeedInvalidate = false;
         mNeedFullInvalidate = false;
+
+        mDown = new Point();
+        mScalePivot = new Point();
 
         setStatus(STATUS_DESTROYED);
 
@@ -208,8 +224,8 @@ public class JCanvas extends SurfaceView implements
 
         mCache = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
         mWorkingSpace = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
-        mCacheCanvas = new Canvas(mCache);
-        mWorkingCanvas = new Canvas(mWorkingSpace);
+        mCacheCanvas.setBitmap(mCache);
+        mWorkingCanvas.setBitmap(mWorkingSpace);
         requestFullInvalidate();
 
         Log.i(this.getClass().getSimpleName(),
@@ -221,9 +237,6 @@ public class JCanvas extends SurfaceView implements
         setStatus(STATUS_DESTROYED);
     }
 
-    private Point mDown;
-    private boolean mAbortAnimating;
-
     @Override
     public boolean onActionDown(Point down) {
         if (STATUS_ANIMATING == getStatus()) {
@@ -234,7 +247,7 @@ public class JCanvas extends SurfaceView implements
             setStatus(STATUS_IDLE);
         }
 
-        mDown = new Point(down);
+        mDown.set(down);
         return true;
     }
 
@@ -249,7 +262,10 @@ public class JCanvas extends SurfaceView implements
             Matrix matrix = new Matrix();
             matrix.setTranslate(-mOffset.x, -mOffset.y);
             matrix.postScale(1.0f / mScale, 1.0f / mScale);
-            mTrack.set(track.applyTransform(matrix));
+            track.applyTransform(matrix);
+            synchronized (this) {
+                mTrack.set(track);
+            }
         }
         return true;
     }
@@ -263,21 +279,20 @@ public class JCanvas extends SurfaceView implements
         Matrix matrix = new Matrix();
         matrix.setTranslate(-mOffset.x, -mOffset.y);
         matrix.postScale(1.0f / mScale, 1.0f / mScale);
-        mTrack.set(track.applyTransform(matrix));
+        track.applyTransform(matrix);
+        synchronized (this) {
+            mTrack.set(track);
+        }
 
         return true;
     }
-
-    private float mFactor;
-    private float mStartScale;
-    private Point mScalePivot;
 
     @Override
     public void onScaleStart(Point pivot) {
         setStatus(STATUS_SCALING);
         mFactor = 1.0f;
         mStartScale = mScale;
-        mScalePivot = new Point(pivot);
+        mScalePivot.set(pivot);
         if (null != mScaleListener) {
             mScaleListener.onScaleChangeStart(mScale);
         }
@@ -330,17 +345,16 @@ public class JCanvas extends SurfaceView implements
         return true;
     }
 
-    private float mAnimStartScale;
-    private float mAnimEndScale;
-
     @Override
     public boolean onActionUp(PointV focus, boolean fling) {
         if (STATUS_PAINTING == getStatus()) {
             // 将路径加入撤销栈，清空重做栈，清空路径
-            mUndoStack.addFirst(new HistoryData(mBrush.cloneBrush(), new Track(mTrack)));
-            mRedoStack.clear();
-            updateCache(false);
-            mTrack.reset();
+            synchronized (this) {
+                mUndoStack.addFirst(new HistoryData(mBrush, mTrack));
+                mRedoStack.clear();
+                updateCache(false);
+                mTrack.reset();
+            }
         }
 
         // 处理动画
@@ -469,9 +483,6 @@ public class JCanvas extends SurfaceView implements
         return xOut || yOut;
     }
 
-    private int mLastScrX = 0;
-    private int mLastScrY = 0;
-
     @Override
     public void run() {
         while (STATUS_DESTROYED != getStatus()) {
@@ -578,10 +589,9 @@ public class JCanvas extends SurfaceView implements
 
             mCacheStack.addAll(mUndoStack);
             // 绘制撤销栈中记录的路径。需要逆序遍历
-            ListIterator it = mCacheStack.listIterator(mCacheStack.size());
+            ListIterator<HistoryData> it = mCacheStack.listIterator(mCacheStack.size());
             while (it.hasPrevious()) {
-                HistoryData path = (HistoryData) it.previous();
-                path.draw(mCacheCanvas);
+                it.previous().draw(mCacheCanvas);
             }
 
             mCacheStack.clear();
@@ -595,13 +605,14 @@ public class JCanvas extends SurfaceView implements
     private void drawWorkingPath() {
         // 清空画布
         mWorkingCanvas.drawColor(Color.TRANSPARENT, PorterDuff.Mode.CLEAR);
-
         // 绘制缓存
         mWorkingCanvas.drawBitmap(mCache, 0, 0, mPaint);
         // 绘制当前工作路径
-        if (!mTrack.isEmpty()) {
-            Track track = new Track(mTrack);
-            mBrush.drawTrack(mWorkingCanvas, track);
+        synchronized (this) {
+            if (!mTrack.isEmpty()) {
+                Track track = new Track(mTrack);
+                mBrush.drawTrack(mWorkingCanvas, track);
+            }
         }
     }
 
@@ -652,10 +663,20 @@ public class JCanvas extends SurfaceView implements
         return mStatus;
     }
 
+    /**
+     * 为画布设置笔刷
+     *
+     * @param brush 笔刷
+     */
     public void setBrush(BaseBrush brush) {
         this.mBrush = brush;
     }
 
+    /**
+     * 获取当期的笔刷对象
+     *
+     * @return 当前笔刷对象
+     */
     public BaseBrush getBrush() {
         return mBrush;
     }
@@ -728,7 +749,13 @@ public class JCanvas extends SurfaceView implements
      * @return bitmap
      */
     public Bitmap getBitmap() {
-        return Bitmap.createBitmap(mCache);
+        Bitmap b = Bitmap.createBitmap(mCache.getWidth(), mCache.getHeight(), mCache.getConfig());
+        Canvas canvas = new Canvas(b);
+
+        canvas.drawColor(DefaultValue.CANVAS_COLOR);
+        canvas.drawBitmap(mCache, 0, 0, null);
+
+        return b;
     }
 
     /**

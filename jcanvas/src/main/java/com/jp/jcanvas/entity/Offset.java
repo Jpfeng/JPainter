@@ -1,14 +1,9 @@
 package com.jp.jcanvas.entity;
 
-import android.os.Parcel;
-import android.os.Parcelable;
-
-import java.io.Serializable;
-
 /**
  *
  */
-public class Offset implements Parcelable, Serializable {
+public class Offset {
     public float x;
     public float y;
 
@@ -23,11 +18,6 @@ public class Offset implements Parcelable, Serializable {
     public Offset(float x, float y) {
         this.x = x;
         this.y = y;
-    }
-
-    protected Offset(Parcel in) {
-        x = in.readFloat();
-        y = in.readFloat();
     }
 
     public void set(float x, float y) {
@@ -59,35 +49,7 @@ public class Offset implements Parcelable, Serializable {
     }
 
     @Override
-    public int hashCode() {
-        return (int) (31 * x + y);
-    }
-
-    @Override
     public String toString() {
         return "Offset(" + x + ", " + y + ")";
     }
-
-    @Override
-    public int describeContents() {
-        return 0;
-    }
-
-    @Override
-    public void writeToParcel(Parcel dest, int flags) {
-        dest.writeFloat(x);
-        dest.writeFloat(y);
-    }
-
-    public static final Creator<Offset> CREATOR = new Creator<Offset>() {
-        @Override
-        public Offset createFromParcel(Parcel in) {
-            return new Offset(in);
-        }
-
-        @Override
-        public Offset[] newArray(int size) {
-            return new Offset[size];
-        }
-    };
 }

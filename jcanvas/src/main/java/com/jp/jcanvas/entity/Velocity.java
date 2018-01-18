@@ -1,14 +1,9 @@
 package com.jp.jcanvas.entity;
 
-import android.os.Parcel;
-import android.os.Parcelable;
-
-import java.io.Serializable;
-
 /**
  *
  */
-public class Velocity implements Parcelable, Serializable {
+public class Velocity {
     public float x;
     public float y;
 
@@ -23,11 +18,6 @@ public class Velocity implements Parcelable, Serializable {
     public Velocity(float x, float y) {
         this.x = x;
         this.y = y;
-    }
-
-    protected Velocity(Parcel in) {
-        x = in.readFloat();
-        y = in.readFloat();
     }
 
     public void set(float x, float y) {
@@ -59,35 +49,7 @@ public class Velocity implements Parcelable, Serializable {
     }
 
     @Override
-    public int hashCode() {
-        return (int) (31 * x + y);
-    }
-
-    @Override
     public String toString() {
         return "Velocity(" + x + ", " + y + ")";
     }
-
-    @Override
-    public int describeContents() {
-        return 0;
-    }
-
-    @Override
-    public void writeToParcel(Parcel dest, int flags) {
-        dest.writeFloat(x);
-        dest.writeFloat(y);
-    }
-
-    public static final Creator<Velocity> CREATOR = new Creator<Velocity>() {
-        @Override
-        public Velocity createFromParcel(Parcel in) {
-            return new Velocity(in);
-        }
-
-        @Override
-        public Velocity[] newArray(int size) {
-            return new Velocity[size];
-        }
-    };
 }

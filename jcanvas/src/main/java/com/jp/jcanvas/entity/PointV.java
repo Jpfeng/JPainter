@@ -1,14 +1,9 @@
 package com.jp.jcanvas.entity;
 
-import android.os.Parcel;
-import android.os.Parcelable;
-
-import java.io.Serializable;
-
 /**
  *
  */
-public class PointV implements Parcelable, Serializable {
+public class PointV {
     public float x;
     public float y;
     private Velocity v;
@@ -27,24 +22,18 @@ public class PointV implements Parcelable, Serializable {
         this.v = new Velocity(v);
     }
 
-    protected PointV(Parcel in) {
-        x = in.readFloat();
-        y = in.readFloat();
-        v = in.readParcelable(Velocity.class.getClassLoader());
-    }
-
     public Velocity getVelocity() {
         return v;
-    }
-
-    public void set(float x, float y, Velocity v) {
-        set(x, y);
-        this.v = new Velocity(v);
     }
 
     public void set(float x, float y) {
         this.x = x;
         this.y = y;
+    }
+
+    public void set(float x, float y, Velocity v) {
+        set(x, y);
+        this.v = new Velocity(v);
     }
 
     public void set(PointV p) {
@@ -76,36 +65,7 @@ public class PointV implements Parcelable, Serializable {
     }
 
     @Override
-    public int hashCode() {
-        return (int) (31 * x + y + v.x + v.y);
-    }
-
-    @Override
     public String toString() {
         return "Point@(" + x + ", " + y + "), v = (" + v.x + ", " + v.y + ")";
     }
-
-    @Override
-    public int describeContents() {
-        return 0;
-    }
-
-    @Override
-    public void writeToParcel(Parcel dest, int flags) {
-        dest.writeFloat(x);
-        dest.writeFloat(y);
-        dest.writeParcelable(v, flags);
-    }
-
-    public static final Creator<PointV> CREATOR = new Creator<PointV>() {
-        @Override
-        public PointV createFromParcel(Parcel in) {
-            return new PointV(in);
-        }
-
-        @Override
-        public PointV[] newArray(int size) {
-            return new PointV[size];
-        }
-    };
 }

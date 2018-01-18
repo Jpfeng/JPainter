@@ -2,23 +2,19 @@ package com.jp.jcanvas.entity;
 
 import android.graphics.Matrix;
 import android.graphics.Path;
-import android.os.Parcel;
-import android.os.Parcelable;
 import android.support.annotation.NonNull;
 import android.util.Log;
 
-import java.io.IOException;
-import java.io.Serializable;
 import java.util.LinkedList;
 
 /**
  *
  */
-public class Track implements Parcelable, Serializable {
+public class Track {
 
     private LinkedList<PointV> mPoints;
-    private transient LinkedList<Path> mSections;
-    private transient Path mPath;
+    private LinkedList<Path> mSections;
+    private Path mPath;
 
     private PointV mLastPoint;
     private Point mLastControl;
@@ -41,14 +37,6 @@ public class Track implements Parcelable, Serializable {
         this.mLastPoint = new PointV(track.mLastPoint);
         this.mLastControl = new Point(track.mLastControl);
         this.mStarted = track.mStarted;
-    }
-
-    protected Track(Parcel in) {
-        in.readTypedList(this.mPoints, PointV.CREATOR);
-        this.mLastPoint = in.readParcelable(PointV.class.getClassLoader());
-        this.mLastControl = in.readParcelable(Point.class.getClassLoader());
-        this.mStarted = in.readByte() != 0;
-        generatePathViaPoints(this.mPoints);
     }
 
     public void set(@NonNull Track track) {
@@ -187,40 +175,4 @@ public class Track implements Parcelable, Serializable {
     public Path getPath() {
         return new Path(mPath);
     }
-
-    private void readObject(java.io.ObjectInputStream s)
-            throws IOException, ClassNotFoundException {
-        s.defaultReadObject();
-        generatePathViaPoints(mPoints);
-    }
-
-    private void writeObject(java.io.ObjectOutputStream s)
-            throws IOException {
-        s.defaultWriteObject();
-    }
-
-    @Override
-    public int describeContents() {
-        return 0;
-    }
-
-    @Override
-    public void writeToParcel(Parcel dest, int flags) {
-        dest.writeTypedList(this.mPoints);
-        dest.writeParcelable(this.mLastPoint, flags);
-        dest.writeParcelable(this.mLastControl, flags);
-        dest.writeByte(this.mStarted ? (byte) 1 : (byte) 0);
-    }
-
-    public static final Creator<Track> CREATOR = new Creator<Track>() {
-        @Override
-        public Track createFromParcel(Parcel source) {
-            return new Track(source);
-        }
-
-        @Override
-        public Track[] newArray(int size) {
-            return new Track[size];
-        }
-    };
 }

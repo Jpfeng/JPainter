@@ -1,14 +1,9 @@
 package com.jp.jcanvas.entity;
 
-import android.os.Parcel;
-import android.os.Parcelable;
-
-import java.io.Serializable;
-
 /**
  *
  */
-public class Scale implements Parcelable, Serializable {
+public class Scale {
     public float factor;
     private PointV pivot;
 
@@ -23,11 +18,6 @@ public class Scale implements Parcelable, Serializable {
     public Scale(float factor, PointV pivot) {
         this.factor = factor;
         this.pivot = new PointV(pivot);
-    }
-
-    protected Scale(Parcel in) {
-        factor = in.readFloat();
-        pivot = in.readParcelable(PointV.class.getClassLoader());
     }
 
     public void set(float scale, PointV pivot) {
@@ -63,35 +53,7 @@ public class Scale implements Parcelable, Serializable {
     }
 
     @Override
-    public int hashCode() {
-        return (int) (31 * factor + pivot.hashCode());
-    }
-
-    @Override
     public String toString() {
         return "Scale " + factor + ", Pivot(" + pivot.x + ", " + pivot.y + ")";
     }
-
-    @Override
-    public int describeContents() {
-        return 0;
-    }
-
-    @Override
-    public void writeToParcel(Parcel dest, int flags) {
-        dest.writeFloat(factor);
-        dest.writeParcelable(pivot, flags);
-    }
-
-    public static final Creator<Scale> CREATOR = new Creator<Scale>() {
-        @Override
-        public Scale createFromParcel(Parcel in) {
-            return new Scale(in);
-        }
-
-        @Override
-        public Scale[] newArray(int size) {
-            return new Scale[size];
-        }
-    };
 }

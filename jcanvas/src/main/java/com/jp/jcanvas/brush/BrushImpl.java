@@ -9,7 +9,6 @@ import android.graphics.PorterDuff;
 import android.graphics.PorterDuffXfermode;
 import android.graphics.RectF;
 
-import com.jp.jcanvas.entity.Point;
 import com.jp.jcanvas.entity.PointV;
 import com.jp.jcanvas.entity.Track;
 

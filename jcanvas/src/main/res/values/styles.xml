@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <style name="DefaultSVPanelStyle">
+        <item name="svp_pointer_size">24dp</item>
+        <item name="svp_pointer_stroke_width">4dp</item>
+        <item name="svp_pointer_stroke">@android:color/darker_gray</item>
+        <item name="svp_hue">0</item>
+        <item name="svp_saturation">1</item>
+        <item name="svp_value">1</item>
+    </style>
+
+    <style name="DefaultHueWheelStyle">
+        <item name="hw_wheel_width">56dp</item>
+        <item name="hw_finder_height">24dp</item>
+        <item name="hw_finder_ledge">8dp</item>
+        <item name="hw_finder_stroke">@android:color/darker_gray</item>
+        <item name="hw_finder_stroke_width">4dp</item>
+        <item name="hw_finder_corner_radius">4dp</item>
+        <item name="hw_hue">0</item>
+    </style>
+</resources>

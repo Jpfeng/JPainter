@@ -1,7 +1,8 @@
 package com.jp.jcanvas.colorpicker;
 
-import android.annotation.TargetApi;
 import android.content.Context;
+import android.content.res.Resources.NotFoundException;
+import android.content.res.TypedArray;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.ComposeShader;
@@ -10,29 +11,36 @@ import android.graphics.Paint;
 import android.graphics.PorterDuff;
 import android.graphics.RectF;
 import android.graphics.Shader;
+import android.graphics.drawable.Drawable;
 import android.support.annotation.ColorInt;
 import android.support.annotation.FloatRange;
 import android.support.annotation.Nullable;
 import android.util.AttributeSet;
-import android.util.TypedValue;
+import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
+
+import com.jp.jcanvas.R;
 
 /**
  *
  */
 class SaturationValuePanel extends View {
-
-    private static final int COLOR_POINTER_STROKE = Color.GRAY;
-    private static final int DEFAULT_POINTER_SIZE_DP = 24;
-    private static final int DEFAULT_POINTER_EDGE_DP = 4;
+    private static final int POINTER_MODE_COLOR = 1;
+    private static final int POINTER_MODE_IMAGE = 2;
 
     private Paint mPanelPaint;
-    private Paint mPointPaint;
+    private Paint mPointerPaint;
     private RectF mPanelRect;
     private PanelGestureDetector mGDetector;
 
     private float[] mHSV;
+
+    private int mPointerSize;
+    private int mPointerStrokeWidth;
+    private int mPointerStrokeColor;
+    private Drawable mPointerDrawable;
+    private int mPointerMode;
 
     private OnColorChangeListener mSVListener;
 
@@ -41,18 +49,40 @@ class SaturationValuePanel extends View {
     }
 
     public SaturationValuePanel(Context context, @Nullable AttributeSet attrs) {
-        this(context, attrs, 0);
+        this(context, attrs, R.attr.SVPanelStyle);
     }
 
     public SaturationValuePanel(Context context, @Nullable AttributeSet attrs, int defStyleAttr) {
         super(context, attrs, defStyleAttr);
-        init(context);
-    }
+        TypedArray ta = context.obtainStyledAttributes(
+                attrs, R.styleable.SaturationValuePanel, defStyleAttr, R.style.DefaultSVPanelStyle);
 
-    @TargetApi(21)
-    public SaturationValuePanel(Context context, @Nullable AttributeSet attrs, int defStyleAttr,
-                                int defStyleRes) {
-        super(context, attrs, defStyleAttr, defStyleRes);
+        mPointerSize = ta.getDimensionPixelSize(
+                R.styleable.SaturationValuePanel_svp_pointer_size, 0);
+
+        mPointerStrokeWidth = ta.getDimensionPixelSize(
+                R.styleable.SaturationValuePanel_svp_pointer_stroke_width, 0);
+
+        try {
+            mPointerStrokeColor = ta.getColor(
+                    R.styleable.SaturationValuePanel_svp_pointer_stroke, 0);
+            mPointerMode = POINTER_MODE_COLOR;
+        } catch (NotFoundException e) {
+            Log.d(this.getClass().getSimpleName(), "get color failed, try drawable mode");
+            mPointerDrawable = ta.getDrawable(R.styleable.SaturationValuePanel_svp_pointer_stroke);
+            mPointerMode = POINTER_MODE_IMAGE;
+        }
+
+        float hue = ta.getFloat(R.styleable.SaturationValuePanel_svp_hue, 0f);
+        float saturation = ta.getFloat(R.styleable.SaturationValuePanel_svp_saturation, 1f);
+        float value = ta.getFloat(R.styleable.SaturationValuePanel_svp_value, 1f);
+
+        mHSV = new float[]{0f, 1f, 1f};
+        mHSV[0] = hue % 360f;
+        mHSV[1] = Math.max(Math.min(saturation, 1f), 0f);
+        mHSV[2] = Math.max(Math.min(value, 1f), 0f);
+
+        ta.recycle();
         init(context);
     }
 
@@ -60,13 +90,15 @@ class SaturationValuePanel extends View {
         mPanelPaint = new Paint();
         mPanelPaint.setAntiAlias(true);
 
-        mPointPaint = new Paint();
-        mPointPaint.setAntiAlias(true);
-        mPointPaint.setStyle(Paint.Style.FILL);
+        mPointerPaint = new Paint();
+        mPointerPaint.setAntiAlias(true);
+        mPointerPaint.setStyle(Paint.Style.FILL);
 
         mPanelRect = new RectF();
 
-        mHSV = new float[]{0f, 1f, 1f};
+        // 需要关闭硬件加速
+        // https://stackoverflow.com/questions/12445583/issue-with-composeshader-on-android-4-1-1
+        setLayerType(View.LAYER_TYPE_SOFTWARE, null);
 
         mGDetector = new PanelGestureDetector(context, mPanelRect, (s, v) -> {
             mHSV[1] = s;
@@ -145,24 +177,28 @@ class SaturationValuePanel extends View {
 
         mPanelPaint.setShader(generateSVShader());
         canvas.clipRect(mPanelRect);
-
-        int layer = canvas.saveLayer(0, 0, canvas.getWidth(), canvas.getHeight(),
-                null, Canvas.ALL_SAVE_FLAG);
-        // https://stackoverflow.com/questions/12445583/issue-with-composeshader-on-android-4-1-1
-        setLayerType(View.LAYER_TYPE_SOFTWARE, null);
         canvas.drawRect(mPanelRect, mPanelPaint);
-        canvas.restoreToCount(layer);
 
         float cX = mPanelRect.left + mHSV[1] * (mPanelRect.right - mPanelRect.left);
         float cY = mPanelRect.top + (1 - mHSV[2]) * (mPanelRect.bottom - mPanelRect.top);
+        float r = mPointerSize / 2f;
 
-        mPointPaint.setColor(COLOR_POINTER_STROKE);
-        canvas.drawCircle(cX, cY,
-                dp2px(DEFAULT_POINTER_SIZE_DP / 2 + DEFAULT_POINTER_EDGE_DP), mPointPaint);
+        switch (mPointerMode) {
+            case POINTER_MODE_COLOR:
+                mPointerPaint.setColor(mPointerStrokeColor);
+                canvas.drawCircle(cX, cY, mPointerSize / 2f, mPointerPaint);
+                break;
+
+            case POINTER_MODE_IMAGE:
+                mPointerDrawable.setBounds((int) (cX - r), (int) (cY - r),
+                        (int) (cX + r), (int) (cY + r));
+                mPointerDrawable.draw(canvas);
+                break;
+        }
 
         int color = Color.HSVToColor(mHSV);
-        mPointPaint.setColor(color);
-        canvas.drawCircle(cX, cY, dp2px(DEFAULT_POINTER_SIZE_DP / 2), mPointPaint);
+        mPointerPaint.setColor(color);
+        canvas.drawCircle(cX, cY, r - mPointerStrokeWidth, mPointerPaint);
     }
 
     private ComposeShader generateSVShader() {
@@ -177,11 +213,6 @@ class SaturationValuePanel extends View {
                 Color.WHITE, color, Shader.TileMode.CLAMP);
 
         return new ComposeShader(vShader, sShader, PorterDuff.Mode.MULTIPLY);
-    }
-
-    private int dp2px(int dp) {
-        return (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, dp,
-                getContext().getResources().getDisplayMetrics());
     }
 
     public void setHue(@FloatRange(from = 0f, to = 360f) float hue) {

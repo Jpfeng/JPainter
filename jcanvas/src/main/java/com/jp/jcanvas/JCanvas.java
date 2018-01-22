@@ -1,6 +1,5 @@
 package com.jp.jcanvas;
 
-import android.annotation.TargetApi;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -109,33 +108,13 @@ public class JCanvas extends SurfaceView implements
 
     private OnScaleChangeListener mScaleListener;
 
-    // temp vars
-    private Point mDown;
-    private boolean mAbortAnimating;
-    private float mFactor;
-    private float mStartScale;
-    private Point mScalePivot;
-    private float mAnimStartScale;
-    private float mAnimEndScale;
-    private int mLastScrX;
-    private int mLastScrY;
 
     public JCanvas(Context context) {
         this(context, null);
     }
 
     public JCanvas(Context context, AttributeSet attrs) {
-        this(context, attrs, 0);
-    }
-
-    public JCanvas(Context context, AttributeSet attrs, int defStyleAttr) {
-        super(context, attrs, defStyleAttr);
-        init();
-    }
-
-    @TargetApi(21)
-    public JCanvas(Context context, AttributeSet attrs, int defStyleAttr, int defStyleRes) {
-        super(context, attrs, defStyleAttr, defStyleRes);
+        super(context, attrs);
         init();
     }
 
@@ -188,6 +167,7 @@ public class JCanvas extends SurfaceView implements
         mNeedInvalidate = false;
         mNeedFullInvalidate = false;
 
+        // temp vars
         mDown = new Point();
         mScalePivot = new Point();
 
@@ -236,6 +216,9 @@ public class JCanvas extends SurfaceView implements
     public void surfaceDestroyed(SurfaceHolder holder) {
         setStatus(STATUS_DESTROYED);
     }
+
+    private Point mDown;
+    private boolean mAbortAnimating;
 
     @Override
     public boolean onActionDown(Point down) {
@@ -286,6 +269,10 @@ public class JCanvas extends SurfaceView implements
 
         return true;
     }
+
+    private float mFactor;
+    private float mStartScale;
+    private Point mScalePivot;
 
     @Override
     public void onScaleStart(Point pivot) {
@@ -344,6 +331,9 @@ public class JCanvas extends SurfaceView implements
         mScalePivot.set(focus.x, focus.y);
         return true;
     }
+
+    private float mAnimStartScale;
+    private float mAnimEndScale;
 
     @Override
     public boolean onActionUp(PointV focus, boolean fling) {
@@ -482,6 +472,9 @@ public class JCanvas extends SurfaceView implements
         }
         return xOut || yOut;
     }
+
+    private int mLastScrX;
+    private int mLastScrY;
 
     @Override
     public void run() {

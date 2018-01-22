@@ -1,7 +1,8 @@
 package com.jp.jcanvas.colorpicker;
 
-import android.annotation.TargetApi;
 import android.content.Context;
+import android.content.res.Resources;
+import android.content.res.TypedArray;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
@@ -9,11 +10,13 @@ import android.graphics.PorterDuff;
 import android.graphics.PorterDuffXfermode;
 import android.graphics.RectF;
 import android.graphics.SweepGradient;
+import android.graphics.drawable.Drawable;
 import android.support.annotation.ColorInt;
 import android.support.annotation.FloatRange;
 import android.support.annotation.Nullable;
 import android.support.annotation.Px;
 import android.util.AttributeSet;
+import android.util.Log;
 import android.util.TypedValue;
 import android.view.MotionEvent;
 import android.view.VelocityTracker;
@@ -22,6 +25,8 @@ import android.view.ViewConfiguration;
 import android.view.animation.AccelerateDecelerateInterpolator;
 import android.widget.Scroller;
 
+import com.jp.jcanvas.R;
+
 /**
  *
  */
@@ -29,20 +34,17 @@ class HueWheel extends View {
 
     @ColorInt
     private static final int[] mWheelColors = new int[]{
-            // Color(Hue, Saturation, Value)
-            0xFFFF0000, // red(0, 100, 100)
-            0xFFFFFF00, // yellow(60,100,100)
-            0xFF00FF00, // green(120, 100, 100)
-            0xFF00FFFF, // cyan(180, 100, 100)
-            0xFF0000FF, // blue(240, 100, 100)
-            0xFFFF00FF, // magenta(300, 100, 100)
-            0xFFFF0000}; // red(0, 100, 100)
+            //              Color   (H,   S,   V)
+            0xFFFF0000, //  red     (0,   100, 100)
+            0xFFFFFF00, //  yellow  (60,  100, 100)
+            0xFF00FF00, //  green   (120, 100, 100)
+            0xFF00FFFF, //  cyan    (180, 100, 100)
+            0xFF0000FF, //  blue    (240, 100, 100)
+            0xFFFF00FF, //  magenta (300, 100, 100)
+            0xFFFF0000}; // red     (360, 100, 100)
 
-    private static final int DEFAULT_WHEEL_WIDTH_DP = 56;
-    private static final int DEFAULT_FINDER_LEDGE_DP = 8;
-    private static final int DEFAULT_FINDER_HEIGHT_DP = 24;
-    private static final int DEFAULT_FINDER_EDGE_DP = 4;
-    private static final int DEFAULT_FINDER_CORNER_RADIUS = 4;
+    private static final int FINDER_MODE_COLOR = 1;
+    private static final int FINDER_MODE_IMAGE = 2;
 
     private static final float MIN_DEGREE = 0f;
     private static final float MAX_DEGREE = 360f;
@@ -53,13 +55,24 @@ class HueWheel extends View {
     private RectF mRectIn;
     private RectF mRectOut;
     private RectF mRectFinder;
+    private RectF mRectFinderFill;
     private SweepGradient mShader;
     private PorterDuffXfermode mClearXfermode;
 
-    private float[] mHSV;
-    private int mWheelWidth;
+    private float mWheelWidth;
+    private float mFinderHeight;
+    private float mFinderLedge;
+    private float mFinderStrokeWidth;
+    private float mFinderCornerR;
+
+    @ColorInt
+    private int mFinderStrokeColor;
+    private Drawable mFinderDrawable;
+    private int mFinderMode;
 
     private float mHue;
+    private float[] mHSV;
+
     private float mOneDegreePx;
 
     private int mMinFlingVelocity;
@@ -75,18 +88,37 @@ class HueWheel extends View {
     }
 
     public HueWheel(Context context, @Nullable AttributeSet attrs) {
-        this(context, attrs, 0);
+        this(context, attrs, R.attr.HueWheelStyle);
     }
 
     public HueWheel(Context context, @Nullable AttributeSet attrs, int defStyleAttr) {
         super(context, attrs, defStyleAttr);
-        init(context);
-    }
 
-    @TargetApi(21)
-    public HueWheel(Context context, @Nullable AttributeSet attrs, int defStyleAttr,
-                    int defStyleRes) {
-        super(context, attrs, defStyleAttr, defStyleRes);
+        TypedArray ta = context.obtainStyledAttributes(
+                attrs, R.styleable.HueWheel, defStyleAttr, R.style.DefaultHueWheelStyle);
+
+        mWheelWidth = ta.getDimensionPixelSize(R.styleable.HueWheel_hw_wheel_width, 0);
+        mFinderHeight = ta.getDimensionPixelSize(R.styleable.HueWheel_hw_finder_height, 0);
+        mFinderLedge = ta.getDimensionPixelSize(R.styleable.HueWheel_hw_finder_ledge, 0);
+        mFinderStrokeWidth = ta.getDimensionPixelSize(
+                R.styleable.HueWheel_hw_finder_stroke_width, 0);
+        mFinderCornerR = ta.getDimensionPixelSize(
+                R.styleable.HueWheel_hw_finder_corner_radius, 0);
+
+        try {
+            mFinderStrokeColor = ta.getColor(
+                    R.styleable.HueWheel_hw_finder_stroke, 0);
+            mFinderMode = FINDER_MODE_COLOR;
+        } catch (Resources.NotFoundException e) {
+            Log.d(this.getClass().getSimpleName(), "get color failed, try drawable mode");
+            mFinderDrawable = ta.getDrawable(R.styleable.HueWheel_hw_finder_stroke);
+            mFinderMode = FINDER_MODE_IMAGE;
+        }
+
+        float hue = ta.getFloat(R.styleable.HueWheel_hw_hue, 0);
+        mHue = hue % 360f;
+
+        ta.recycle();
         init(context);
     }
 
@@ -97,15 +129,13 @@ class HueWheel extends View {
 
         mFinderPaint = new Paint();
         mFinderPaint.setAntiAlias(true);
-        mFinderPaint.setStrokeWidth(dp2px(DEFAULT_FINDER_EDGE_DP));
+        mFinderPaint.setStyle(Paint.Style.FILL);
 
         mRectIn = new RectF();
         mRectOut = new RectF();
         mRectFinder = new RectF();
+        mRectFinderFill = new RectF();
 
-        mWheelWidth = dp2px(DEFAULT_WHEEL_WIDTH_DP);
-
-        mHue = 0f;
         mHSV = new float[]{mHue, 1f, 1f};
 
         mScroller = new Scroller(getContext(), new AccelerateDecelerateInterpolator());
@@ -138,7 +168,7 @@ class HueWheel extends View {
         float wheelH = hResult - getPaddingTop() - getPaddingBottom();
         float radius = (float) (wheelH / Math.sqrt(2));
         float halfWW = mWheelWidth / 2;
-        float finderLedge = Math.min(dp2px(DEFAULT_FINDER_LEDGE_DP), radius - wheelH / 2 - halfWW);
+        float finderLedge = Math.min(mFinderLedge, radius - wheelH / 2 - halfWW);
 
         if (MeasureSpec.EXACTLY == wMode) {
             wResult = wSize;
@@ -164,16 +194,16 @@ class HueWheel extends View {
 
         updateShader();
         mOneDegreePx = wheelH / ARC_SWEEP_ANGEL;
-        float halfEW = dp2px(DEFAULT_FINDER_EDGE_DP) / 2;
 
-        float finderH = Math.min(dp2px(DEFAULT_FINDER_HEIGHT_DP), hResult);
+        float finderH = Math.min(mFinderHeight, hResult);
         float finderL = getPaddingLeft() + radius - wheelH / 2 - halfWW - finderLedge;
         float finderT = getPaddingTop() + wheelH / 2 - finderH / 2;
         float finderR = finderL + mWheelWidth + finderLedge * 2;
         float finderB = finderT + finderH;
 
-        mRectFinder.set(finderL + halfEW, finderT + halfEW,
-                finderR - halfEW, finderB - halfEW);
+        mRectFinder.set(finderL, finderT, finderR, finderB);
+        mRectFinderFill.set(finderL + mFinderStrokeWidth, finderT + mFinderStrokeWidth,
+                finderR - mFinderStrokeWidth, finderB - mFinderStrokeWidth);
     }
 
     @Override
@@ -200,16 +230,23 @@ class HueWheel extends View {
         canvas.restore();
         canvas.restoreToCount(layer);
 
-        float cornerR = dp2px(DEFAULT_FINDER_CORNER_RADIUS);
+        switch (mFinderMode) {
+            case FINDER_MODE_COLOR:
+                mFinderPaint.setColor(mFinderStrokeColor);
+                float cornerStroke = mFinderCornerR + mFinderStrokeWidth;
+                canvas.drawRoundRect(mRectFinder, cornerStroke, cornerStroke, mFinderPaint);
+                break;
 
-        mFinderPaint.setStyle(Paint.Style.FILL);
+            case FINDER_MODE_IMAGE:
+                mFinderDrawable.setBounds((int) (mRectFinder.left), (int) (mRectFinder.top),
+                        (int) (mRectFinder.right), (int) (mRectFinder.bottom));
+                mFinderDrawable.draw(canvas);
+                break;
+        }
+
         mHSV[0] = mHue;
         mFinderPaint.setColor(Color.HSVToColor(mHSV));
-        canvas.drawRoundRect(mRectFinder, cornerR, cornerR, mFinderPaint);
-
-        mFinderPaint.setStyle(Paint.Style.STROKE);
-        mFinderPaint.setColor(Color.GRAY);
-        canvas.drawRoundRect(mRectFinder, cornerR, cornerR, mFinderPaint);
+        canvas.drawRoundRect(mRectFinderFill, mFinderCornerR, mFinderCornerR, mFinderPaint);
     }
 
     float mMoveLastY;
@@ -345,7 +382,7 @@ class HueWheel extends View {
 
     @Px
     public int getWheelWidth() {
-        return mWheelWidth;
+        return (int) mWheelWidth;
     }
 
     public void setWheelWidth(int wheelWidth) {

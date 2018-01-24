@@ -1,11 +1,10 @@
 package com.jp.jcanvas.colorpicker;
 
-import android.annotation.TargetApi;
 import android.content.Context;
+import android.content.res.TypedArray;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.BitmapShader;
-import android.graphics.Color;
 import android.graphics.Shader;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.PaintDrawable;
@@ -26,30 +25,33 @@ import com.jp.jcanvas.R;
  */
 class ColorPreview extends LinearLayout {
 
-    @ColorInt
-    private int mColorOld;
-    @ColorInt
-    private int mColorNew;
-
     private ImageView mIvOld;
     private ImageView mIvNew;
+
+    private ColorDrawable mDrawableOld;
+    private ColorDrawable mDrawableNew;
 
     public ColorPreview(Context context) {
         this(context, null);
     }
 
     public ColorPreview(Context context, @Nullable AttributeSet attrs) {
-        this(context, attrs, 0);
+        this(context, attrs, R.attr.ColorPreviewStyle);
     }
 
     public ColorPreview(Context context, @Nullable AttributeSet attrs, int defStyleAttr) {
         super(context, attrs, defStyleAttr);
-        init(context);
-    }
 
-    @TargetApi(21)
-    public ColorPreview(Context context, AttributeSet attrs, int defStyleAttr, int defStyleRes) {
-        super(context, attrs, defStyleAttr, defStyleRes);
+        TypedArray ta = context.obtainStyledAttributes(
+                attrs, R.styleable.ColorPreview, defStyleAttr, 0);
+
+        int colorOld = ta.getColor(R.styleable.ColorPreview_cp_old_color, 0);
+        int colorNew = ta.getColor(R.styleable.ColorPreview_cp_new_color, 0);
+
+        mDrawableOld = new ColorDrawable(colorOld);
+        mDrawableNew = new ColorDrawable(colorNew);
+
+        ta.recycle();
         init(context);
     }
 
@@ -57,9 +59,6 @@ class ColorPreview extends LinearLayout {
         View view = LayoutInflater.from(context).inflate(R.layout.layout_color_preview, this);
         mIvOld = view.findViewById(R.id.iv_color_old);
         mIvNew = view.findViewById(R.id.iv_color_new);
-
-        mColorOld = Color.TRANSPARENT;
-        mColorNew = Color.TRANSPARENT;
 
         ShapeDrawable.ShaderFactory sf = new ShapeDrawable.ShaderFactory() {
             @Override
@@ -74,29 +73,22 @@ class ColorPreview extends LinearLayout {
         drawable.setShaderFactory(sf);
         this.setBackgroundDrawable(drawable);
 
-        ColorDrawable drawableOld = new ColorDrawable(mColorOld);
-        mIvOld.setImageDrawable(drawableOld);
-
-        ColorDrawable drawableNew = new ColorDrawable(mColorNew);
-        mIvNew.setImageDrawable(drawableNew);
+        mIvOld.setImageDrawable(mDrawableOld);
+        mIvNew.setImageDrawable(mDrawableNew);
     }
 
     public void setOld(@ColorInt int color) {
-        mColorOld = color;
-        ColorDrawable drawable = new ColorDrawable(color);
-        mIvOld.setImageDrawable(drawable);
+        mDrawableOld.setColor(color);
+        mIvOld.setImageDrawable(mDrawableOld);
     }
 
     public void setNew(@ColorInt int color) {
-        mColorNew = color;
-        ColorDrawable drawable = new ColorDrawable(color);
-        mIvNew.setImageDrawable(drawable);
+        mDrawableNew.setColor(color);
+        mIvNew.setImageDrawable(mDrawableNew);
     }
 
     public void setColor(@ColorInt int color) {
-        mColorOld = mColorNew;
-        setOld(mColorOld);
-        mColorNew = color;
-        setNew(mColorNew);
+        setOld(mDrawableNew.getColor());
+        setNew(color);
     }
 }

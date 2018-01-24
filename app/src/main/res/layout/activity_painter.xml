@@ -135,13 +135,13 @@
 
     <android.support.v7.widget.CardView
         android:id="@+id/cv_color_picker"
-        android:layout_width="match_parent"
+        android:layout_width="wrap_content"
         android:layout_height="match_parent"
         android:visibility="gone">
 
         <com.jp.jcanvas.colorpicker.ColorPicker
             android:id="@+id/cp_picker"
-            android:layout_width="match_parent"
+            android:layout_width="wrap_content"
             android:layout_height="match_parent" />
     </android.support.v7.widget.CardView>
 </FrameLayout>

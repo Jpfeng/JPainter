@@ -1,7 +1,6 @@
 package com.jp.jcanvas.colorpicker;
 
 import android.content.Context;
-import android.content.res.Resources;
 import android.content.res.TypedArray;
 import android.graphics.Canvas;
 import android.graphics.Color;
@@ -10,13 +9,13 @@ import android.graphics.PorterDuff;
 import android.graphics.PorterDuffXfermode;
 import android.graphics.RectF;
 import android.graphics.SweepGradient;
+import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
 import android.support.annotation.ColorInt;
 import android.support.annotation.FloatRange;
 import android.support.annotation.Nullable;
 import android.support.annotation.Px;
 import android.util.AttributeSet;
-import android.util.Log;
 import android.util.TypedValue;
 import android.view.MotionEvent;
 import android.view.VelocityTracker;
@@ -43,21 +42,19 @@ class HueWheel extends View {
             0xFFFF00FF, //  magenta (300, 100, 100)
             0xFFFF0000}; // red     (360, 100, 100)
 
-    private static final int FINDER_MODE_COLOR = 1;
-    private static final int FINDER_MODE_IMAGE = 2;
-
     private static final float MIN_DEGREE = 0f;
     private static final float MAX_DEGREE = 360f;
     private static final float ARC_SWEEP_ANGEL = 90f;
 
     private Paint mWheelPaint;
     private Paint mFinderPaint;
+    private SweepGradient mShader;
+    private PorterDuffXfermode mClearXfermode;
+
     private RectF mRectIn;
     private RectF mRectOut;
     private RectF mRectFinder;
     private RectF mRectFinderFill;
-    private SweepGradient mShader;
-    private PorterDuffXfermode mClearXfermode;
 
     private float mWheelWidth;
     private float mFinderHeight;
@@ -65,10 +62,7 @@ class HueWheel extends View {
     private float mFinderStrokeWidth;
     private float mFinderCornerR;
 
-    @ColorInt
-    private int mFinderStrokeColor;
     private Drawable mFinderDrawable;
-    private int mFinderMode;
 
     private float mHue;
     private float[] mHSV;
@@ -104,16 +98,7 @@ class HueWheel extends View {
                 R.styleable.HueWheel_hw_finder_stroke_width, 0);
         mFinderCornerR = ta.getDimensionPixelSize(
                 R.styleable.HueWheel_hw_finder_corner_radius, 0);
-
-        try {
-            mFinderStrokeColor = ta.getColor(
-                    R.styleable.HueWheel_hw_finder_stroke, 0);
-            mFinderMode = FINDER_MODE_COLOR;
-        } catch (Resources.NotFoundException e) {
-            Log.d(this.getClass().getSimpleName(), "get color failed, try drawable mode");
-            mFinderDrawable = ta.getDrawable(R.styleable.HueWheel_hw_finder_stroke);
-            mFinderMode = FINDER_MODE_IMAGE;
-        }
+        mFinderDrawable = ta.getDrawable(R.styleable.HueWheel_hw_finder_stroke);
 
         float hue = ta.getFloat(R.styleable.HueWheel_hw_hue, 0);
         mHue = hue % 360f;
@@ -230,18 +215,15 @@ class HueWheel extends View {
         canvas.restore();
         canvas.restoreToCount(layer);
 
-        switch (mFinderMode) {
-            case FINDER_MODE_COLOR:
-                mFinderPaint.setColor(mFinderStrokeColor);
-                float cornerStroke = mFinderCornerR + mFinderStrokeWidth;
-                canvas.drawRoundRect(mRectFinder, cornerStroke, cornerStroke, mFinderPaint);
-                break;
+        if (mFinderDrawable instanceof ColorDrawable) {
+            mFinderPaint.setColor(((ColorDrawable) mFinderDrawable).getColor());
+            float cornerStroke = mFinderCornerR + mFinderStrokeWidth;
+            canvas.drawRoundRect(mRectFinder, cornerStroke, cornerStroke, mFinderPaint);
 
-            case FINDER_MODE_IMAGE:
-                mFinderDrawable.setBounds((int) (mRectFinder.left), (int) (mRectFinder.top),
-                        (int) (mRectFinder.right), (int) (mRectFinder.bottom));
-                mFinderDrawable.draw(canvas);
-                break;
+        } else {
+            mFinderDrawable.setBounds((int) (mRectFinder.left), (int) (mRectFinder.top),
+                    (int) (mRectFinder.right), (int) (mRectFinder.bottom));
+            mFinderDrawable.draw(canvas);
         }
 
         mHSV[0] = mHue;

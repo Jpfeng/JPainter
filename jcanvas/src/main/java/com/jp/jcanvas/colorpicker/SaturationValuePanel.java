@@ -1,7 +1,6 @@
 package com.jp.jcanvas.colorpicker;
 
 import android.content.Context;
-import android.content.res.Resources.NotFoundException;
 import android.content.res.TypedArray;
 import android.graphics.Canvas;
 import android.graphics.Color;
@@ -11,12 +10,12 @@ import android.graphics.Paint;
 import android.graphics.PorterDuff;
 import android.graphics.RectF;
 import android.graphics.Shader;
+import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
 import android.support.annotation.ColorInt;
 import android.support.annotation.FloatRange;
 import android.support.annotation.Nullable;
 import android.util.AttributeSet;
-import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
 
@@ -26,8 +25,6 @@ import com.jp.jcanvas.R;
  *
  */
 class SaturationValuePanel extends View {
-    private static final int POINTER_MODE_COLOR = 1;
-    private static final int POINTER_MODE_IMAGE = 2;
 
     private Paint mPanelPaint;
     private Paint mPointerPaint;
@@ -38,9 +35,7 @@ class SaturationValuePanel extends View {
 
     private int mPointerSize;
     private int mPointerStrokeWidth;
-    private int mPointerStrokeColor;
     private Drawable mPointerDrawable;
-    private int mPointerMode;
 
     private OnColorChangeListener mSVListener;
 
@@ -59,19 +54,9 @@ class SaturationValuePanel extends View {
 
         mPointerSize = ta.getDimensionPixelSize(
                 R.styleable.SaturationValuePanel_svp_pointer_size, 0);
-
         mPointerStrokeWidth = ta.getDimensionPixelSize(
                 R.styleable.SaturationValuePanel_svp_pointer_stroke_width, 0);
-
-        try {
-            mPointerStrokeColor = ta.getColor(
-                    R.styleable.SaturationValuePanel_svp_pointer_stroke, 0);
-            mPointerMode = POINTER_MODE_COLOR;
-        } catch (NotFoundException e) {
-            Log.d(this.getClass().getSimpleName(), "get color failed, try drawable mode");
-            mPointerDrawable = ta.getDrawable(R.styleable.SaturationValuePanel_svp_pointer_stroke);
-            mPointerMode = POINTER_MODE_IMAGE;
-        }
+        mPointerDrawable = ta.getDrawable(R.styleable.SaturationValuePanel_svp_pointer_stroke);
 
         float hue = ta.getFloat(R.styleable.SaturationValuePanel_svp_hue, 0f);
         float saturation = ta.getFloat(R.styleable.SaturationValuePanel_svp_saturation, 1f);
@@ -183,17 +168,14 @@ class SaturationValuePanel extends View {
         float cY = mPanelRect.top + (1 - mHSV[2]) * (mPanelRect.bottom - mPanelRect.top);
         float r = mPointerSize / 2f;
 
-        switch (mPointerMode) {
-            case POINTER_MODE_COLOR:
-                mPointerPaint.setColor(mPointerStrokeColor);
-                canvas.drawCircle(cX, cY, mPointerSize / 2f, mPointerPaint);
-                break;
+        if (mPointerDrawable instanceof ColorDrawable) {
+            mPointerPaint.setColor(((ColorDrawable) mPointerDrawable).getColor());
+            canvas.drawCircle(cX, cY, mPointerSize / 2f, mPointerPaint);
 
-            case POINTER_MODE_IMAGE:
-                mPointerDrawable.setBounds((int) (cX - r), (int) (cY - r),
-                        (int) (cX + r), (int) (cY + r));
-                mPointerDrawable.draw(canvas);
-                break;
+        } else {
+            mPointerDrawable.setBounds((int) (cX - r), (int) (cY - r),
+                    (int) (cX + r), (int) (cY + r));
+            mPointerDrawable.draw(canvas);
         }
 
         int color = Color.HSVToColor(mHSV);

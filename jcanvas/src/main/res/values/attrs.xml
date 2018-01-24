@@ -13,8 +13,8 @@
 
     <declare-styleable name="SaturationValuePanel">
         <attr name="svp_pointer_size" format="dimension" />
-        <attr name="svp_pointer_stroke_width" format="dimension" />
         <attr name="svp_pointer_stroke" format="color|reference" />
+        <attr name="svp_pointer_stroke_width" format="dimension" />
         <attr name="svp_hue" format="float" />
         <attr name="svp_saturation" format="float" />
         <attr name="svp_value" format="float" />
@@ -26,13 +26,24 @@
             <enum name="horizontal" value="0" />
             <enum name="vertical" value="1" />
         </attr>
+        <attr name="csb_bar_size" format="dimension" />
         <attr name="csb_finder_size" format="dimension" />
+        <attr name="csb_finder_stroke" format="color|reference" />
+        <attr name="csb_finder_stroke_width" format="dimension" />
+        <attr name="csb_finder_corner_radius" format="dimension" />
         <attr name="csb_color_start" format="color" />
         <attr name="csb_color_end" format="color" />
     </declare-styleable>
+    <attr name="ColorSeekBarStyle" format="reference" />
 
     <declare-styleable name="ColorPreview">
         <attr name="cp_old_color" format="color" />
         <attr name="cp_new_color" format="color" />
     </declare-styleable>
+    <attr name="ColorPreviewStyle" format="reference" />
+
+    <declare-styleable name="ColorInfo">
+        <attr name="ci_color" format="color" />
+    </declare-styleable>
+    <attr name="ColorInfoStyle" format="reference" />
 </resources>

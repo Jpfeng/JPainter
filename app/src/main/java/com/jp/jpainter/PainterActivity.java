@@ -15,6 +15,7 @@ import android.view.View;
 import android.widget.SeekBar;
 import android.widget.TextView;
 
+import com.jp.jcanvas.CanvasInterface;
 import com.jp.jcanvas.JCanvas;
 import com.jp.jcanvas.brush.BaseBrush;
 import com.jp.jcanvas.brush.BrushTag01;
@@ -167,7 +168,7 @@ public class PainterActivity extends AppCompatActivity {
                     .show();
         });
 
-        painter.setOnScaleChangeListener(new JCanvas.OnScaleChangeListener() {
+        painter.setOnScaleChangeListener(new CanvasInterface.OnScaleChangeListener() {
             @Override
             public void onScaleChangeStart(float startScale) {
                 tvScale.setText(

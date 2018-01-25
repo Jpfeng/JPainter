@@ -91,14 +91,14 @@ class HueWheel extends View {
         TypedArray ta = context.obtainStyledAttributes(
                 attrs, R.styleable.HueWheel, defStyleAttr, R.style.DefaultHueWheelStyle);
 
-        mWheelWidth = ta.getDimensionPixelSize(R.styleable.HueWheel_hw_wheel_width, 0);
-        mFinderHeight = ta.getDimensionPixelSize(R.styleable.HueWheel_hw_finder_height, 0);
-        mFinderLedge = ta.getDimensionPixelSize(R.styleable.HueWheel_hw_finder_ledge, 0);
+        mWheelWidth = ta.getDimensionPixelSize(R.styleable.HueWheel_hw_wheelWidth, 0);
+        mFinderHeight = ta.getDimensionPixelSize(R.styleable.HueWheel_hw_finderHeight, 0);
+        mFinderLedge = ta.getDimensionPixelSize(R.styleable.HueWheel_hw_finderLedge, 0);
         mFinderStrokeWidth = ta.getDimensionPixelSize(
-                R.styleable.HueWheel_hw_finder_stroke_width, 0);
+                R.styleable.HueWheel_hw_finderStrokeWidth, 0);
         mFinderCornerR = ta.getDimensionPixelSize(
-                R.styleable.HueWheel_hw_finder_corner_radius, 0);
-        mFinderDrawable = ta.getDrawable(R.styleable.HueWheel_hw_finder_stroke);
+                R.styleable.HueWheel_hw_finderCornerRadius, 0);
+        mFinderDrawable = ta.getDrawable(R.styleable.HueWheel_hw_finderStroke);
 
         float hue = ta.getFloat(R.styleable.HueWheel_hw_hue, 0);
         mHue = hue % 360f;
@@ -221,7 +221,7 @@ class HueWheel extends View {
             canvas.drawRoundRect(mRectFinder, cornerStroke, cornerStroke, mFinderPaint);
 
         } else {
-            mFinderDrawable.setBounds((int) (mRectFinder.left), (int) (mRectFinder.top),
+            mFinderDrawable.mutate().setBounds((int) (mRectFinder.left), (int) (mRectFinder.top),
                     (int) (mRectFinder.right), (int) (mRectFinder.bottom));
             mFinderDrawable.draw(canvas);
         }

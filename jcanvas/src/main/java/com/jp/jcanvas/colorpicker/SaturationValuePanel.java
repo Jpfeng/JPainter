@@ -53,10 +53,10 @@ class SaturationValuePanel extends View {
                 attrs, R.styleable.SaturationValuePanel, defStyleAttr, R.style.DefaultSVPanelStyle);
 
         mPointerSize = ta.getDimensionPixelSize(
-                R.styleable.SaturationValuePanel_svp_pointer_size, 0);
+                R.styleable.SaturationValuePanel_svp_pointerSize, 0);
         mPointerStrokeWidth = ta.getDimensionPixelSize(
-                R.styleable.SaturationValuePanel_svp_pointer_stroke_width, 0);
-        mPointerDrawable = ta.getDrawable(R.styleable.SaturationValuePanel_svp_pointer_stroke);
+                R.styleable.SaturationValuePanel_svp_pointerStrokeWidth, 0);
+        mPointerDrawable = ta.getDrawable(R.styleable.SaturationValuePanel_svp_pointerStroke);
 
         float hue = ta.getFloat(R.styleable.SaturationValuePanel_svp_hue, 0f);
         float saturation = ta.getFloat(R.styleable.SaturationValuePanel_svp_saturation, 1f);
@@ -173,7 +173,7 @@ class SaturationValuePanel extends View {
             canvas.drawCircle(cX, cY, mPointerSize / 2f, mPointerPaint);
 
         } else {
-            mPointerDrawable.setBounds((int) (cX - r), (int) (cY - r),
+            mPointerDrawable.mutate().setBounds((int) (cX - r), (int) (cY - r),
                     (int) (cX + r), (int) (cY + r));
             mPointerDrawable.draw(canvas);
         }

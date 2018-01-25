@@ -1,30 +1,37 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+
+    <style name="DefaultJCanvasStyle">
+        <item name="j_minScale">1.0</item>
+        <item name="j_maxScale">6.0</item>
+        <item name="j_background">@android:color/white</item>
+    </style>
+
+    <style name="DefaultHueWheelStyle">
+        <item name="hw_wheelWidth">56dp</item>
+        <item name="hw_finderHeight">24dp</item>
+        <item name="hw_finderLedge">8dp</item>
+        <item name="hw_finderStroke">@android:color/darker_gray</item>
+        <item name="hw_finderStrokeWidth">4dp</item>
+        <item name="hw_finderCornerRadius">4dp</item>
+        <item name="hw_hue">0</item>
+    </style>
+
     <style name="DefaultSVPanelStyle">
-        <item name="svp_pointer_size">24dp</item>
-        <item name="svp_pointer_stroke_width">4dp</item>
-        <item name="svp_pointer_stroke">@android:color/darker_gray</item>
+        <item name="svp_pointerSize">24dp</item>
+        <item name="svp_pointerStrokeWidth">4dp</item>
+        <item name="svp_pointerStroke">@android:color/darker_gray</item>
         <item name="svp_hue">0</item>
         <item name="svp_saturation">1</item>
         <item name="svp_value">1</item>
     </style>
 
-    <style name="DefaultHueWheelStyle">
-        <item name="hw_wheel_width">56dp</item>
-        <item name="hw_finder_height">24dp</item>
-        <item name="hw_finder_ledge">8dp</item>
-        <item name="hw_finder_stroke">@android:color/darker_gray</item>
-        <item name="hw_finder_stroke_width">4dp</item>
-        <item name="hw_finder_corner_radius">4dp</item>
-        <item name="hw_hue">0</item>
-    </style>
-
     <style name="DefaultColorSeekBarStyle">
-        <item name="csb_bar_size">32dp</item>
-        <item name="csb_finder_size">16dp</item>
-        <item name="csb_finder_stroke">@android:color/darker_gray</item>
-        <item name="csb_finder_stroke_width">4dp</item>
-        <item name="csb_finder_corner_radius">4dp</item>
+        <item name="csb_barSize">32dp</item>
+        <item name="csb_finderSize">16dp</item>
+        <item name="csb_finderStroke">@android:color/darker_gray</item>
+        <item name="csb_finderStrokeWidth">4dp</item>
+        <item name="csb_finderCornerRadius">4dp</item>
         <item name="csb_orientation">horizontal</item>
     </style>
 </resources>

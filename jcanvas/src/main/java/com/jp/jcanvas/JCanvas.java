@@ -1,6 +1,7 @@
 package com.jp.jcanvas;
 
 import android.content.Context;
+import android.content.res.TypedArray;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.BitmapShader;
@@ -11,6 +12,9 @@ import android.graphics.Paint;
 import android.graphics.PorterDuff;
 import android.graphics.RectF;
 import android.graphics.Shader;
+import android.graphics.drawable.ColorDrawable;
+import android.graphics.drawable.Drawable;
+import android.support.annotation.NonNull;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.view.MotionEvent;
@@ -20,6 +24,7 @@ import android.view.animation.AccelerateDecelerateInterpolator;
 import android.widget.Scroller;
 
 import com.jp.jcanvas.CanvasGestureDetector.OnCanvasGestureListener;
+import com.jp.jcanvas.CanvasInterface.OnScaleChangeListener;
 import com.jp.jcanvas.brush.BaseBrush;
 import com.jp.jcanvas.brush.BrushTag01;
 import com.jp.jcanvas.entity.HistoryData;
@@ -42,32 +47,37 @@ public class JCanvas extends SurfaceView implements
     /**
      * 闲置状态。无触摸交互且无需更新视图。
      */
-    private static final int STATUS_IDLE = 0;
+    public static final int STATUS_IDLE = 0;
 
     /**
      * 绘制状态。用户产生交互且正在绘制。
      */
-    private static final int STATUS_PAINTING = 1;
+    public static final int STATUS_PAINTING = 1;
 
     /**
      * 缩放状态。用户产生交互且正在缩放视图。
      */
-    private static final int STATUS_SCALING = 2;
+    public static final int STATUS_SCALING = 2;
 
     /**
      * 移动状态。用户产生交互且正在移动视图。
      */
-    private static final int STATUS_MOVING = 3;
+    public static final int STATUS_MOVING = 3;
 
     /**
      * 动画状态。无交互但正在显示动画。
      */
-    private static final int STATUS_ANIMATING = 4;
+    public static final int STATUS_ANIMATING = 4;
 
     /**
      * 销毁状态。SurfaceView 已被销毁。
      */
-    private static final int STATUS_DESTROYED = 5;
+    public static final int STATUS_DESTROYED = 5;
+
+    /**
+     * 默认帧率
+     */
+    private static final int FRAME_RATE = 60;
 
     private int mFrameTime;
     private float mMinScale;
@@ -85,6 +95,7 @@ public class JCanvas extends SurfaceView implements
 
     private Bitmap mCache;
     private Bitmap mWorkingSpace;
+    private Drawable mBG;
 
     private int mHeight;
     private int mWidth;
@@ -108,13 +119,28 @@ public class JCanvas extends SurfaceView implements
 
     private OnScaleChangeListener mScaleListener;
 
-
     public JCanvas(Context context) {
         this(context, null);
     }
 
     public JCanvas(Context context, AttributeSet attrs) {
-        super(context, attrs);
+        this(context, attrs, R.attr.JCanvasStyle);
+    }
+
+    public JCanvas(Context context, AttributeSet attrs, int defStyleAttr) {
+        super(context, attrs, defStyleAttr);
+
+        TypedArray ta = context.obtainStyledAttributes(
+                attrs, R.styleable.JCanvas, defStyleAttr, R.style.DefaultJCanvasStyle);
+
+        float min = ta.getFloat(R.styleable.JCanvas_j_minScale, 0);
+        float max = ta.getFloat(R.styleable.JCanvas_j_maxScale, 0);
+        mBG = ta.getDrawable(R.styleable.JCanvas_j_background);
+        ta.recycle();
+
+        setMinScale(min);
+        setMaxScale(max);
+
         init();
     }
 
@@ -125,17 +151,13 @@ public class JCanvas extends SurfaceView implements
         setFocusable(true);
         setFocusableInTouchMode(true);
 
-        mFrameTime = DefaultValue.FRAME_TIME_MILLIS;
-
-        setMinScale(DefaultValue.MIN_SCALE);
-        setMaxScale(DefaultValue.MAX_SCALE);
+        mFrameTime = 1000 / FRAME_RATE;
 
         mBrush = new BrushTag01();
 
         mPaint = new Paint();
         mPaint.setAntiAlias(true);
         mPaint.setStyle(Paint.Style.FILL);
-        mPaint.setColor(DefaultValue.CANVAS_COLOR);
         // 缩放时对性能影响很大，暂时禁用
 //        mPaint.setFilterBitmap(true);
 
@@ -617,7 +639,9 @@ public class JCanvas extends SurfaceView implements
         canvas.drawPaint(mPatternPaint);
         // 绘制背景
         matrix.mapRect(mTrans, mOrin);
-        canvas.drawRect(mTrans, mPaint);
+        mBG.setBounds(((int) mTrans.left), ((int) mTrans.top),
+                ((int) mTrans.right), ((int) mTrans.bottom));
+        mBG.draw(canvas);
     }
 
     /**
@@ -630,6 +654,29 @@ public class JCanvas extends SurfaceView implements
     private void requestFullInvalidate() {
         mNeedFullInvalidate = true;
         requestInvalidate();
+    }
+
+    @Override
+    public void setBackground(Drawable background) {
+        super.setBackground(background);
+
+        if (background == mBG) {
+            return;
+        }
+        mBG = background;
+        requestInvalidate();
+    }
+
+    @Override
+    public void setBackgroundColor(int color) {
+        super.setBackgroundColor(color);
+
+        if (mBG instanceof ColorDrawable) {
+            ((ColorDrawable) mBG.mutate()).setColor(color);
+            requestInvalidate();
+        } else {
+            setBackground(new ColorDrawable(color));
+        }
     }
 
     /**
@@ -661,7 +708,7 @@ public class JCanvas extends SurfaceView implements
      *
      * @param brush 笔刷
      */
-    public void setBrush(BaseBrush brush) {
+    public void setBrush(@NonNull BaseBrush brush) {
         this.mBrush = brush;
     }
 
@@ -745,7 +792,9 @@ public class JCanvas extends SurfaceView implements
         Bitmap b = Bitmap.createBitmap(mCache.getWidth(), mCache.getHeight(), mCache.getConfig());
         Canvas canvas = new Canvas(b);
 
-        canvas.drawColor(DefaultValue.CANVAS_COLOR);
+        mBG.setBounds(((int) mOrin.left), ((int) mOrin.top),
+                ((int) mOrin.right), ((int) mOrin.bottom));
+        mBG.draw(canvas);
         canvas.drawBitmap(mCache, 0, 0, null);
 
         return b;
@@ -771,31 +820,5 @@ public class JCanvas extends SurfaceView implements
      */
     public void setOnScaleChangeListener(OnScaleChangeListener listener) {
         mScaleListener = listener;
-    }
-
-    /**
-     * 倍率变化监听器
-     */
-    public interface OnScaleChangeListener {
-        /**
-         * 开始变化倍率
-         *
-         * @param startScale 开始倍率
-         */
-        void onScaleChangeStart(float startScale);
-
-        /**
-         * 变化倍率中。只提供当前倍率，如需前一个倍率请自行记录
-         *
-         * @param currentScale 当期倍率
-         */
-        void onScaleChange(float currentScale);
-
-        /**
-         * 变化倍率结束
-         *
-         * @param endScale 结束倍率
-         */
-        void onScaleChangeEnd(float endScale);
     }
 }

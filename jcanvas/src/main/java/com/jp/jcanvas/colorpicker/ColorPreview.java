@@ -45,8 +45,8 @@ class ColorPreview extends LinearLayout {
         TypedArray ta = context.obtainStyledAttributes(
                 attrs, R.styleable.ColorPreview, defStyleAttr, 0);
 
-        int colorOld = ta.getColor(R.styleable.ColorPreview_cp_old_color, 0);
-        int colorNew = ta.getColor(R.styleable.ColorPreview_cp_new_color, 0);
+        int colorOld = ta.getColor(R.styleable.ColorPreview_cp_oldColor, 0);
+        int colorNew = ta.getColor(R.styleable.ColorPreview_cp_newColor, 0);
 
         mDrawableOld = new ColorDrawable(colorOld);
         mDrawableNew = new ColorDrawable(colorNew);
@@ -78,12 +78,12 @@ class ColorPreview extends LinearLayout {
     }
 
     public void setOld(@ColorInt int color) {
-        mDrawableOld.setColor(color);
+        ((ColorDrawable) mDrawableOld.mutate()).setColor(color);
         mIvOld.setImageDrawable(mDrawableOld);
     }
 
     public void setNew(@ColorInt int color) {
-        mDrawableNew.setColor(color);
+        ((ColorDrawable) mDrawableNew.mutate()).setColor(color);
         mIvNew.setImageDrawable(mDrawableNew);
     }
 

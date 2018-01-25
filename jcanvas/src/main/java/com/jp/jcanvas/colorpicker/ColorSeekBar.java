@@ -27,7 +27,7 @@ import com.jp.jcanvas.R;
 /**
  *
  */
-class ColorSeekBar extends View {
+public class ColorSeekBar extends View {
 
     public static final int HORIZONTAL = 0;
     public static final int VERTICAL = 1;
@@ -82,23 +82,23 @@ class ColorSeekBar extends View {
                 attrs, R.styleable.ColorSeekBar, defStyleAttr, R.style.DefaultColorSeekBarStyle);
 
         mOrientation = ta.getInt(R.styleable.ColorSeekBar_csb_orientation, 0);
-        mBarSize = ta.getDimensionPixelSize(R.styleable.ColorSeekBar_csb_bar_size, 0);
-        mFinderSize = ta.getDimensionPixelSize(R.styleable.ColorSeekBar_csb_finder_size, 0);
+        mBarSize = ta.getDimensionPixelSize(R.styleable.ColorSeekBar_csb_barSize, 0);
+        mFinderSize = ta.getDimensionPixelSize(R.styleable.ColorSeekBar_csb_finderSize, 0);
         mFinderStrokeWidth = ta.getDimensionPixelSize(
-                R.styleable.ColorSeekBar_csb_finder_stroke_width, 0);
+                R.styleable.ColorSeekBar_csb_finderStrokeWidth, 0);
         mFinderCornerR = ta.getDimensionPixelSize(
-                R.styleable.ColorSeekBar_csb_finder_corner_radius, 0);
+                R.styleable.ColorSeekBar_csb_finderCornerRadius, 0);
 
-        mStartColor = ta.getColor(R.styleable.ColorSeekBar_csb_color_start, 0);
-        mEndColor = ta.getColor(R.styleable.ColorSeekBar_csb_color_end, 0);
+        mStartColor = ta.getColor(R.styleable.ColorSeekBar_csb_colorStart, 0);
+        mEndColor = ta.getColor(R.styleable.ColorSeekBar_csb_colorEnd, 0);
 
         try {
             mFinderStrokeColor = ta.getColor(
-                    R.styleable.ColorSeekBar_csb_finder_stroke, 0);
+                    R.styleable.ColorSeekBar_csb_finderStroke, 0);
             mFinderMode = FINDER_MODE_COLOR;
         } catch (NotFoundException e) {
             Log.d(this.getClass().getSimpleName(), "get color failed, try drawable mode");
-            mFinderDrawable = ta.getDrawable(R.styleable.ColorSeekBar_csb_finder_stroke);
+            mFinderDrawable = ta.getDrawable(R.styleable.ColorSeekBar_csb_finderStroke);
             mFinderMode = FINDER_MODE_IMAGE;
         }
 
@@ -245,7 +245,7 @@ class ColorSeekBar extends View {
                 break;
 
             case FINDER_MODE_IMAGE:
-                mFinderDrawable.setBounds((int) (mRectFinder.left), (int) (mRectFinder.top),
+                mFinderDrawable.mutate().setBounds((int) (mRectFinder.left), (int) (mRectFinder.top),
                         (int) (mRectFinder.right), (int) (mRectFinder.bottom));
                 mFinderDrawable.draw(canvas);
                 break;

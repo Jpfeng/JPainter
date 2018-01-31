@@ -8,6 +8,8 @@ import android.graphics.PathMeasure;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffXfermode;
 import android.graphics.RectF;
+import android.graphics.drawable.ColorDrawable;
+import android.graphics.drawable.Drawable;
 
 import com.jp.jcanvas.entity.PointV;
 import com.jp.jcanvas.entity.Track;
@@ -55,6 +57,16 @@ public class BrushImpl extends BaseBrush {
         mTan = new float[2];
 
         mRect = new RectF();
+    }
+
+    @Override
+    public Drawable getIcon() {
+        return new ColorDrawable(Color.RED);
+    }
+
+    @Override
+    public String getName() {
+        return "BaseImpl";
     }
 
     @Override

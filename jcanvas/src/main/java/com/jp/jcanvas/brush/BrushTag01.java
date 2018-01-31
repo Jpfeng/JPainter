@@ -6,6 +6,8 @@ import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffXfermode;
+import android.graphics.drawable.ColorDrawable;
+import android.graphics.drawable.Drawable;
 
 import com.jp.jcanvas.entity.Track;
 
@@ -13,6 +15,16 @@ import com.jp.jcanvas.entity.Track;
  *
  */
 public class BrushTag01 extends BaseBrush<BrushTag01> {
+    @Override
+    public Drawable getIcon() {
+        return new ColorDrawable(Color.CYAN);
+    }
+
+    @Override
+    public String getName() {
+        return "Impl01";
+    }
+
     @Override
     public void initBrush() {
         mPaint.setStyle(Paint.Style.STROKE);

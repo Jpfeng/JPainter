@@ -2,7 +2,9 @@ package com.jp.jcanvas.brush;
 
 import android.graphics.Canvas;
 import android.graphics.Paint;
+import android.graphics.drawable.Drawable;
 import android.support.annotation.ColorInt;
+import android.support.annotation.FloatRange;
 
 import com.jp.jcanvas.entity.Track;
 
@@ -11,10 +13,11 @@ import com.jp.jcanvas.entity.Track;
  */
 public abstract class BaseBrush<T extends BaseBrush> {
 
-    protected Paint mPaint;
     @ColorInt
     protected int mColor;
+    protected Paint mPaint;
     protected float mWidth;
+    protected float mAlpha;
 
     public BaseBrush() {
         mPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
@@ -34,6 +37,15 @@ public abstract class BaseBrush<T extends BaseBrush> {
         mWidth = width;
         mPaint.setStrokeWidth(width);
     }
+
+    public void setAlpha(@FloatRange(from = 0f, to = 1f) float alpha) {
+        mAlpha = alpha;
+        mPaint.setAlpha((int) (alpha * 255));
+    }
+
+    public abstract Drawable getIcon();
+
+    public abstract String getName();
 
     public abstract void initBrush();
 

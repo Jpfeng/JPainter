@@ -10,7 +10,6 @@ import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
-import android.support.v7.widget.CardView;
 import android.view.View;
 import android.widget.SeekBar;
 import android.widget.TextView;
@@ -22,6 +21,7 @@ import com.jp.jcanvas.brush.BrushTag01;
 import com.jp.jcanvas.brush.EraserTag01;
 import com.jp.jcanvas.colorpicker.ColorPicker;
 import com.jp.jpainter.utils.SDUtil;
+import com.jp.jpainter.widgets.ToolDrawer;
 
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
@@ -52,9 +52,25 @@ public class PainterActivity extends AppCompatActivity {
         TextView tvSave = findViewById(R.id.tv_save);
         TextView tvClear = findViewById(R.id.tv_clear);
 
-        CardView cPicker = findViewById(R.id.cv_color_picker);
-        ColorPicker cp = findViewById(R.id.cp_picker);
+        ToolDrawer cPicker = findViewById(R.id.cv_color_picker);
         JCanvas painter = findViewById(R.id.sp_painter);
+
+        ColorPicker cp = new ColorPicker(getApplicationContext());
+
+        cPicker.setToolDrawerListener(new ToolDrawer.ToolDrawerListener() {
+            @Override
+            public void onDrawerSlide(View toolDrawer, float slideOffset) {
+            }
+
+            @Override
+            public void onDrawerOpened(View toolDrawer) {
+            }
+
+            @Override
+            public void onDrawerClosed(View toolDrawer) {
+                painter.stopInteract(false);
+            }
+        });
 
         mBrush = new BrushTag01();
         mEraser = new EraserTag01();
@@ -68,7 +84,8 @@ public class PainterActivity extends AppCompatActivity {
         cp.setOnConfirmListener(view -> {
             mColor = cp.getColor();
             mBrush.setColor(mColor);
-            cPicker.setVisibility(View.GONE);
+            cPicker.close();
+            painter.stopInteract(false);
         });
         mBrush.setColor(cp.getColor());
 
@@ -79,9 +96,9 @@ public class PainterActivity extends AppCompatActivity {
         tvRedo.setOnClickListener(v -> painter.redo());
 
         tvColor.setOnClickListener(v -> {
-            if (View.VISIBLE != cPicker.getVisibility()) {
-                cPicker.setVisibility(View.VISIBLE);
-            }
+            cp.setColor(mColor);
+            painter.stopInteract(true);
+            cPicker.open(cp);
         });
 
         tvWidth.setOnClickListener(v -> {
@@ -109,7 +126,7 @@ public class PainterActivity extends AppCompatActivity {
                     .setPositiveButton("ok", (dialog, which) -> {
                         mBrush.setWidth(mPaintWidth);
                         mEraser.setWidth(mPaintWidth);
-//                        painter.getBrush().setWidth(mPaintWidth);
+                        painter.getBrush().setWidth(mPaintWidth);
                     })
                     .setNegativeButton("no", null)
                     .create()

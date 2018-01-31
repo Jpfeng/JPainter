@@ -141,7 +141,7 @@ public class ColorSeekBar extends View {
         } else {
             switch (mOrientation) {
                 case HORIZONTAL:
-                    wResult = getSuggestedMinimumWidth();
+                    wResult = getSuggestedMinimumWidth() + getPaddingLeft() + getPaddingRight();
                     break;
 
                 case VERTICAL:
@@ -166,7 +166,7 @@ public class ColorSeekBar extends View {
                     break;
 
                 case VERTICAL:
-                    hResult = getSuggestedMinimumHeight();
+                    hResult = getSuggestedMinimumHeight() + getPaddingTop() + getPaddingBottom();
                     break;
             }
 

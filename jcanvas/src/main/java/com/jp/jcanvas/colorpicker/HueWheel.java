@@ -144,7 +144,7 @@ class HueWheel extends View {
             hResult = hSize;
 
         } else {
-            hResult = getSuggestedMinimumHeight();
+            hResult = getSuggestedMinimumHeight() + getPaddingTop() + getPaddingBottom();
             if (MeasureSpec.AT_MOST == hMode) {
                 hResult = Math.min(hResult, hSize);
             }
@@ -161,7 +161,7 @@ class HueWheel extends View {
         } else {
             int w = (int) (radius - wheelH / 2 + halfWW + finderLedge
                     + getPaddingLeft() + getPaddingRight() + 0.5f);
-            wResult = Math.max(w, getSuggestedMinimumWidth());
+            wResult = Math.max(w, getSuggestedMinimumWidth() + getPaddingLeft() + getPaddingRight());
             if (MeasureSpec.AT_MOST == wMode) {
                 wResult = Math.min(wResult, wSize);
             }

@@ -112,6 +112,8 @@ public class JCanvas extends SurfaceView implements
     private AccelerateDecelerateInterpolator mInterpolator;
     private Scroller mScroller;
 
+    private boolean mInteracting;
+
     // 撤销栈与重做栈
     private LinkedList<HistoryData> mUndoStack;
     private LinkedList<HistoryData> mRedoStack;
@@ -193,10 +195,15 @@ public class JCanvas extends SurfaceView implements
         mDown = new Point();
         mScalePivot = new Point();
 
+        mInteracting = true;
         setStatus(STATUS_DESTROYED);
 
         CanvasGestureDetector gDetector = new CanvasGestureDetector(getContext(), this);
         setOnTouchListener((v, event) -> {
+            if (!mInteracting) {
+                return false;
+            }
+
             boolean handled = false;
 
             if (MotionEvent.ACTION_UP == event.getAction()) {
@@ -811,6 +818,10 @@ public class JCanvas extends SurfaceView implements
         mUndoStack.clear();
         mRedoStack.clear();
         requestInvalidate();
+    }
+
+    public void stopInteract(boolean stop) {
+        mInteracting = !stop;
     }
 
     /**

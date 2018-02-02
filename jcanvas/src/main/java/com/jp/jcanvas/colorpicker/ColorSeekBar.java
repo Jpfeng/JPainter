@@ -1,7 +1,6 @@
 package com.jp.jcanvas.colorpicker;
 
 import android.content.Context;
-import android.content.res.Resources.NotFoundException;
 import android.content.res.TypedArray;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -13,12 +12,12 @@ import android.graphics.PorterDuff;
 import android.graphics.PorterDuffXfermode;
 import android.graphics.RectF;
 import android.graphics.Shader;
+import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
 import android.support.annotation.ColorInt;
 import android.support.annotation.FloatRange;
 import android.support.annotation.Nullable;
 import android.util.AttributeSet;
-import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
 
@@ -32,9 +31,6 @@ public class ColorSeekBar extends View {
     public static final int HORIZONTAL = 0;
     public static final int VERTICAL = 1;
 
-    private static final int FINDER_MODE_COLOR = 1;
-    private static final int FINDER_MODE_IMAGE = 2;
-
     private Paint mBarPaint;
     private Paint mFinderPaint;
 
@@ -43,8 +39,8 @@ public class ColorSeekBar extends View {
     private RectF mRectFinderFill;
 
     private BitmapShader mBGShader;
-    private PorterDuffXfermode mXfermodeSO;
-    private PorterDuffXfermode mXfermodeClear;
+    private PorterDuffXfermode mXferSrcOver;
+    private PorterDuffXfermode mXferClear;
 
     @ColorInt
     private int mStartColor;
@@ -57,10 +53,7 @@ public class ColorSeekBar extends View {
     private int mFinderStrokeWidth;
     private int mFinderCornerR;
 
-    @ColorInt
-    private int mFinderStrokeColor;
     private Drawable mFinderDrawable;
-    private int mFinderMode;
 
     @FloatRange(from = 0f, to = 1f)
     private float mProgress;
@@ -81,9 +74,10 @@ public class ColorSeekBar extends View {
         TypedArray ta = context.obtainStyledAttributes(
                 attrs, R.styleable.ColorSeekBar, defStyleAttr, R.style.DefaultColorSeekBarStyle);
 
-        mOrientation = ta.getInt(R.styleable.ColorSeekBar_csb_orientation, 0);
+        mOrientation = ta.getInt(R.styleable.ColorSeekBar_csb_orientation, HORIZONTAL);
         mBarSize = ta.getDimensionPixelSize(R.styleable.ColorSeekBar_csb_barSize, 0);
         mFinderSize = ta.getDimensionPixelSize(R.styleable.ColorSeekBar_csb_finderSize, 0);
+        mFinderDrawable = ta.getDrawable(R.styleable.ColorSeekBar_csb_finderStroke);
         mFinderStrokeWidth = ta.getDimensionPixelSize(
                 R.styleable.ColorSeekBar_csb_finderStrokeWidth, 0);
         mFinderCornerR = ta.getDimensionPixelSize(
@@ -92,16 +86,6 @@ public class ColorSeekBar extends View {
         mStartColor = ta.getColor(R.styleable.ColorSeekBar_csb_colorStart, 0);
         mEndColor = ta.getColor(R.styleable.ColorSeekBar_csb_colorEnd, 0);
 
-        try {
-            mFinderStrokeColor = ta.getColor(
-                    R.styleable.ColorSeekBar_csb_finderStroke, 0);
-            mFinderMode = FINDER_MODE_COLOR;
-        } catch (NotFoundException e) {
-            Log.d(this.getClass().getSimpleName(), "get color failed, try drawable mode");
-            mFinderDrawable = ta.getDrawable(R.styleable.ColorSeekBar_csb_finderStroke);
-            mFinderMode = FINDER_MODE_IMAGE;
-        }
-
         ta.recycle();
         init();
     }
@@ -109,8 +93,8 @@ public class ColorSeekBar extends View {
     private void init() {
         Bitmap bitmap = BitmapFactory.decodeResource(getResources(), R.drawable.canvas_background);
         mBGShader = new BitmapShader(bitmap, Shader.TileMode.REPEAT, Shader.TileMode.REPEAT);
-        mXfermodeSO = new PorterDuffXfermode(PorterDuff.Mode.SRC_OVER);
-        mXfermodeClear = new PorterDuffXfermode(PorterDuff.Mode.CLEAR);
+        mXferSrcOver = new PorterDuffXfermode(PorterDuff.Mode.SRC_OVER);
+        mXferClear = new PorterDuffXfermode(PorterDuff.Mode.CLEAR);
 
         mBarPaint = new Paint();
         mBarPaint.setAntiAlias(true);
@@ -208,7 +192,7 @@ public class ColorSeekBar extends View {
         canvas.drawPaint(mBarPaint);
 
         mBarPaint.setShader(generateShader());
-        mBarPaint.setXfermode(mXfermodeSO);
+        mBarPaint.setXfermode(mXferSrcOver);
         canvas.drawRect(mRectBar, mBarPaint);
 
         float l = 0f;
@@ -236,22 +220,20 @@ public class ColorSeekBar extends View {
                 r - mFinderStrokeWidth, b - mFinderStrokeWidth);
 
         int layerBar = canvas.saveLayer(mRectBar, null, Canvas.ALL_SAVE_FLAG);
-        mFinderPaint.setXfermode(mXfermodeSO);
-        switch (mFinderMode) {
-            case FINDER_MODE_COLOR:
-                mFinderPaint.setColor(mFinderStrokeColor);
-                float cornerStroke = mFinderCornerR + mFinderStrokeWidth;
-                canvas.drawRoundRect(mRectFinder, cornerStroke, cornerStroke, mFinderPaint);
-                break;
+        mFinderPaint.setXfermode(mXferSrcOver);
 
-            case FINDER_MODE_IMAGE:
-                mFinderDrawable.mutate().setBounds((int) (mRectFinder.left), (int) (mRectFinder.top),
-                        (int) (mRectFinder.right), (int) (mRectFinder.bottom));
-                mFinderDrawable.draw(canvas);
-                break;
+        if (mFinderDrawable instanceof ColorDrawable) {
+            mFinderPaint.setColor(((ColorDrawable) mFinderDrawable).getColor());
+            float cornerStroke = mFinderCornerR + mFinderStrokeWidth;
+            canvas.drawRoundRect(mRectFinder, cornerStroke, cornerStroke, mFinderPaint);
+
+        } else {
+            mFinderDrawable.mutate().setBounds((int) (mRectFinder.left), (int) (mRectFinder.top),
+                    (int) (mRectFinder.right), (int) (mRectFinder.bottom));
+            mFinderDrawable.draw(canvas);
         }
 
-        mFinderPaint.setXfermode(mXfermodeClear);
+        mFinderPaint.setXfermode(mXferClear);
         canvas.drawRoundRect(mRectFinderFill, mFinderCornerR, mFinderCornerR, mFinderPaint);
         canvas.restoreToCount(layerBar);
     }
@@ -272,45 +254,45 @@ public class ColorSeekBar extends View {
     @Override
     public boolean onTouchEvent(MotionEvent event) {
         float x = event.getX();
-
+        float y = event.getY();
+        float progress = 0f;
         boolean handled = false;
 
-        switch (event.getAction()) {
-            case MotionEvent.ACTION_DOWN:
-                if (tryCapturePoint(event)) {
-                    if (x < mRectBar.left) {
-                        x = mRectBar.left;
-                    } else if (x > mRectBar.right) {
-                        x = mRectBar.right;
-                    }
-                    mProgress = (x - mRectBar.left) / (mRectBar.right - mRectBar.left);
-                    handled = true;
-                    performClick();
+        int action = event.getAction();
+        if (MotionEvent.ACTION_DOWN == action && !tryCapturePoint(event)) {
+            return false;
+        }
 
-                    if (null != mListener) {
-                        mListener.onProgressChange(mProgress);
-                    }
-                }
-                break;
-
-            case MotionEvent.ACTION_MOVE:
+        switch (action) {
             case MotionEvent.ACTION_UP:
-                if (x < mRectBar.left) {
-                    x = mRectBar.left;
-                } else if (x > mRectBar.right) {
-                    x = mRectBar.right;
-                }
-                mProgress = (x - mRectBar.left) / (mRectBar.right - mRectBar.left);
-                handled = true;
+                performClick();
+                // case 穿透
 
-                if (null != mListener) {
-                    mListener.onProgressChange(mProgress);
+            case MotionEvent.ACTION_DOWN:
+            case MotionEvent.ACTION_MOVE:
+                switch (mOrientation) {
+                    case HORIZONTAL:
+                        x = Math.max(mRectBar.left, Math.min(mRectBar.right, x));
+                        progress = (x - mRectBar.left) / (mRectBar.right - mRectBar.left);
+                        break;
+
+                    case VERTICAL:
+                        y = Math.max(mRectBar.top, Math.min(mRectBar.bottom, y));
+                        progress = (y - mRectBar.top) / (mRectBar.bottom - mRectBar.top);
+                        break;
                 }
+
+                setProgress(progress);
+                handled = true;
                 break;
         }
 
-        invalidate();
         return handled;
+    }
+
+    @Override
+    public boolean performClick() {
+        return super.performClick();
     }
 
     private boolean tryCapturePoint(MotionEvent event) {
@@ -336,7 +318,6 @@ public class ColorSeekBar extends View {
         invalidate();
     }
 
-
     public void setOrientation(int orientation) {
         if (!(HORIZONTAL == orientation || VERTICAL == orientation)) {
             throw new IllegalArgumentException("illegal argument: orientation = " + orientation);
@@ -347,7 +328,6 @@ public class ColorSeekBar extends View {
     }
 
     public void setProgress(@FloatRange(from = 0f, to = 1f) float progress) {
-
         mProgress = progress;
         invalidate();
 

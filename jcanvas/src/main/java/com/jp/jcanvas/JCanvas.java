@@ -26,7 +26,7 @@ import android.widget.Scroller;
 import com.jp.jcanvas.CanvasGestureDetector.OnCanvasGestureListener;
 import com.jp.jcanvas.CanvasInterface.OnScaleChangeListener;
 import com.jp.jcanvas.brush.BaseBrush;
-import com.jp.jcanvas.brush.BrushTag01;
+import com.jp.jcanvas.brush.SimpleBrush;
 import com.jp.jcanvas.entity.HistoryData;
 import com.jp.jcanvas.entity.Offset;
 import com.jp.jcanvas.entity.Point;
@@ -155,7 +155,7 @@ public class JCanvas extends SurfaceView implements
 
         mFrameTime = 1000 / FRAME_RATE;
 
-        mBrush = new BrushTag01();
+        mBrush = new SimpleBrush();
 
         mPaint = new Paint();
         mPaint.setAntiAlias(true);
@@ -167,6 +167,7 @@ public class JCanvas extends SurfaceView implements
         Bitmap bitmap = BitmapFactory.decodeResource(getResources(), R.drawable.canvas_background);
         BitmapShader s = new BitmapShader(bitmap, Shader.TileMode.REPEAT, Shader.TileMode.REPEAT);
         mPatternPaint.setShader(s);
+        bitmap.recycle();
 
         mCacheCanvas = new Canvas();
         mWorkingCanvas = new Canvas();
@@ -244,6 +245,8 @@ public class JCanvas extends SurfaceView implements
     @Override
     public void surfaceDestroyed(SurfaceHolder holder) {
         setStatus(STATUS_DESTROYED);
+        mCache.recycle();
+        mWorkingSpace.recycle();
     }
 
     private Point mDown;

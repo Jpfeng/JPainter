@@ -45,7 +45,7 @@ public abstract class BaseBrush<T extends BaseBrush> {
 
     public abstract Drawable getIcon();
 
-    public abstract String getName();
+    public abstract CharSequence getName();
 
     public abstract void initBrush();
 
@@ -53,5 +53,5 @@ public abstract class BaseBrush<T extends BaseBrush> {
 
     public abstract void drawTrack(Canvas canvas, Track track);
 
-    public abstract void drawPreview();
+    public abstract void drawPreview(Canvas canvas, Track track);
 }

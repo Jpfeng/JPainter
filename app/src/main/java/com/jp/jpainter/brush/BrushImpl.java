@@ -1,4 +1,4 @@
-package com.jp.jcanvas.brush;
+package com.jp.jpainter.brush;
 
 import android.graphics.Canvas;
 import android.graphics.Color;
@@ -11,6 +11,7 @@ import android.graphics.RectF;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
 
+import com.jp.jcanvas.brush.BaseBrush;
 import com.jp.jcanvas.entity.PointV;
 import com.jp.jcanvas.entity.Track;
 
@@ -89,7 +90,7 @@ public class BrushImpl extends BaseBrush {
     }
 
     @Override
-    public void drawPreview() {
+    public void drawPreview(Canvas canvas, Track track) {
 
     }
 

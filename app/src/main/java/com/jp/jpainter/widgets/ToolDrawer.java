@@ -84,29 +84,31 @@ public class ToolDrawer extends ViewGroup {
 
         View tool = getChildAt(0);
         int toolR = tool.getRight();
-        int alpha = (int) (BASE_ALPHA * mAnimProgress + 0.5f);
+        int alpha = (int) (BASE_ALPHA * mAnimProgress);
         mPaint.setColor(Color.argb(alpha, R, G, B));
         canvas.drawRect(toolR, 0, getWidth(), getHeight(), mPaint);
     }
 
     @Override
     public boolean onTouchEvent(MotionEvent event) {
-        boolean handled = false;
+        if (CLOSED == mStatus) {
+            return false;
+        }
+
+        boolean handled = super.onTouchEvent(event);
         switch (event.getAction()) {
             case MotionEvent.ACTION_DOWN:
-                handled = isPointerInScrim(event);
+                handled |= isPointerInScrim(event);
                 break;
 
             case MotionEvent.ACTION_UP:
-                if (isPointerInScrim(event)) {
+                if (handled |= isPointerInScrim(event)) {
                     close();
-                    performClick();
-                    handled = true;
                 }
                 break;
         }
 
-        return handled | super.onTouchEvent(event);
+        return handled;
     }
 
     private boolean isPointerInScrim(MotionEvent event) {
@@ -117,11 +119,6 @@ public class ToolDrawer extends ViewGroup {
         View tool = getChildAt(0);
         int right = (int) (tool.getX() + tool.getWidth());
         return event.getX() > right;
-    }
-
-    @Override
-    public boolean performClick() {
-        return super.performClick();
     }
 
     public void open(@NonNull View tool) {
@@ -168,14 +165,13 @@ public class ToolDrawer extends ViewGroup {
         }
 
         mStatus = CLOSED;
-
-        View tool = getChildAt(0);
         if (mAnimator.isRunning()) {
             mAnimator.cancel();
         }
 
+        View tool = getChildAt(0);
         int toolW = tool.getWidth();
-        int duration = (int) (DURATION * mAnimProgress + 0.5f);
+        int duration = (int) (DURATION * mAnimProgress);
         float startAnimProgress = mAnimProgress;
         mAnimator = ObjectAnimator.ofFloat(tool, "X", -toolW)
                 .setDuration(duration);

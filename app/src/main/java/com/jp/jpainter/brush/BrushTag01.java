@@ -1,4 +1,4 @@
-package com.jp.jcanvas.brush;
+package com.jp.jpainter.brush;
 
 import android.graphics.Canvas;
 import android.graphics.Color;
@@ -9,35 +9,36 @@ import android.graphics.PorterDuffXfermode;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
 
+import com.jp.jcanvas.brush.BaseBrush;
 import com.jp.jcanvas.entity.Track;
 
 /**
  *
  */
-public class EraserTag01 extends BaseBrush<EraserTag01> {
+public class BrushTag01 extends BaseBrush<BrushTag01> {
     @Override
     public Drawable getIcon() {
-        return new ColorDrawable(Color.GREEN);
+        return new ColorDrawable(Color.CYAN);
     }
 
     @Override
     public String getName() {
-        return null;
+        return "Impl01";
     }
 
     @Override
     public void initBrush() {
         mPaint.setStyle(Paint.Style.STROKE);
-        mPaint.setColor(Color.BLACK);
-        mPaint.setStrokeWidth(32f);
+        mPaint.setColor(Color.GRAY);
+        mPaint.setStrokeWidth(16f);
         mPaint.setStrokeCap(Paint.Cap.ROUND);
         mPaint.setStrokeJoin(Paint.Join.ROUND);
-        mPaint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.DST_OUT));
+        mPaint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.SRC_OVER));
     }
 
     @Override
-    public EraserTag01 cloneBrush() {
-        EraserTag01 brush = new EraserTag01();
+    public BrushTag01 cloneBrush() {
+        BrushTag01 brush = new BrushTag01();
         brush.mPaint.set(this.mPaint);
         brush.mColor = this.mColor;
         brush.mWidth = this.mWidth;
@@ -51,7 +52,7 @@ public class EraserTag01 extends BaseBrush<EraserTag01> {
     }
 
     @Override
-    public void drawPreview() {
+    public void drawPreview(Canvas canvas, Track track) {
 
     }
 }

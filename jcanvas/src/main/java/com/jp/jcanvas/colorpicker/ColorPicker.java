@@ -22,7 +22,6 @@ public class ColorPicker extends LinearLayout {
     private SaturationValuePanel mSVPanel;
     private ColorPreview mPreview;
     private ColorInfo mInfo;
-    private TextView mTvConfirm;
 
     private OnConfirmListener mListener;
 
@@ -45,7 +44,7 @@ public class ColorPicker extends LinearLayout {
         mSVPanel = view.findViewById(R.id.svp_panel);
         mPreview = view.findViewById(R.id.cpv_preview);
         mInfo = view.findViewById(R.id.ci_info);
-        mTvConfirm = view.findViewById(R.id.tv_confirm);
+        TextView tvConfirm = view.findViewById(R.id.tv_confirm);
 
         mHueWheel.setOnHueChangeListener(hue -> mSVPanel.setHue(hue));
         mSVPanel.setOnColorChangeListener(color -> {
@@ -53,18 +52,12 @@ public class ColorPicker extends LinearLayout {
             mInfo.setColor(getColor());
         });
 
-        mTvConfirm.setOnClickListener(v -> {
+        tvConfirm.setOnClickListener(v -> {
             if (null != mListener) {
                 mListener.onConfirm(this);
             }
             mPreview.setColor(getColor());
         });
-    }
-
-    @Override
-    public boolean dispatchTouchEvent(MotionEvent ev) {
-        super.dispatchTouchEvent(ev);
-        return true;
     }
 
     public void setColor(@ColorInt int color) {

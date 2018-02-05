@@ -31,6 +31,8 @@ class ColorPreview extends LinearLayout {
     private ColorDrawable mDrawableOld;
     private ColorDrawable mDrawableNew;
 
+    private OnColorClickListener mListener;
+
     public ColorPreview(Context context) {
         this(context, null);
     }
@@ -75,6 +77,17 @@ class ColorPreview extends LinearLayout {
 
         mIvOld.setImageDrawable(mDrawableOld);
         mIvNew.setImageDrawable(mDrawableNew);
+
+        mIvOld.setOnClickListener(v -> {
+            if (null != mListener) {
+                mListener.onOldColorClicked(mDrawableOld.getColor());
+            }
+        });
+        mIvNew.setOnClickListener(v -> {
+            if (null != mListener) {
+                mListener.onNewColorClicked(mDrawableNew.getColor());
+            }
+        });
     }
 
     public void setOld(@ColorInt int color) {
@@ -90,5 +103,15 @@ class ColorPreview extends LinearLayout {
     public void setColor(@ColorInt int color) {
         setOld(mDrawableNew.getColor());
         setNew(color);
+    }
+
+    public void setOnColorClickListener(OnColorClickListener listener) {
+        mListener = listener;
+    }
+
+    public interface OnColorClickListener {
+        void onOldColorClicked(@ColorInt int oldColor);
+
+        void onNewColorClicked(@ColorInt int newColor);
     }
 }

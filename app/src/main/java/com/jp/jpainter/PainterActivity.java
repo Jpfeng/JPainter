@@ -11,14 +11,14 @@ import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.view.View;
-import android.widget.SeekBar;
 import android.widget.TextView;
 
 import com.jp.jcanvas.CanvasInterface;
 import com.jp.jcanvas.JCanvas;
 import com.jp.jcanvas.brush.BaseBrush;
-import com.jp.jcanvas.brush.BrushTag01;
-import com.jp.jcanvas.brush.EraserTag01;
+import com.jp.jpainter.brush.BrushTag01;
+import com.jp.jpainter.brush.EraserTag01;
+import com.jp.jcanvas.brushselector.BrushSelector;
 import com.jp.jcanvas.colorpicker.ColorPicker;
 import com.jp.jpainter.utils.SDUtil;
 import com.jp.jpainter.widgets.ToolDrawer;
@@ -56,6 +56,7 @@ public class PainterActivity extends AppCompatActivity {
         JCanvas painter = findViewById(R.id.sp_painter);
 
         ColorPicker cp = new ColorPicker(getApplicationContext());
+        BrushSelector bs = new BrushSelector(getApplicationContext());
 
         cPicker.setToolDrawerListener(new ToolDrawer.ToolDrawerListener() {
             @Override
@@ -102,35 +103,36 @@ public class PainterActivity extends AppCompatActivity {
         });
 
         tvWidth.setOnClickListener(v -> {
-            SeekBar seekBar = new SeekBar(getApplicationContext());
-            seekBar.setMax(99);
-            seekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
-                @Override
-                public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-                    mPaintWidth = progress;
-                }
-
-                @Override
-                public void onStartTrackingTouch(SeekBar seekBar) {
-                }
-
-                @Override
-                public void onStopTrackingTouch(SeekBar seekBar) {
-                }
-            });
-            seekBar.setProgress(mPaintWidth);
-
-            new AlertDialog.Builder(this)
-                    .setTitle("设置笔尖大小")
-                    .setView(seekBar)
-                    .setPositiveButton("ok", (dialog, which) -> {
-                        mBrush.setWidth(mPaintWidth);
-                        mEraser.setWidth(mPaintWidth);
-                        painter.getBrush().setWidth(mPaintWidth);
-                    })
-                    .setNegativeButton("no", null)
-                    .create()
-                    .show();
+            cPicker.open(bs);
+//            SeekBar seekBar = new SeekBar(getApplicationContext());
+//            seekBar.setMax(99);
+//            seekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+//                @Override
+//                public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+//                    mPaintWidth = progress;
+//                }
+//
+//                @Override
+//                public void onStartTrackingTouch(SeekBar seekBar) {
+//                }
+//
+//                @Override
+//                public void onStopTrackingTouch(SeekBar seekBar) {
+//                }
+//            });
+//            seekBar.setProgress(mPaintWidth);
+//
+//            new AlertDialog.Builder(this)
+//                    .setTitle("设置笔尖大小")
+//                    .setView(seekBar)
+//                    .setPositiveButton("ok", (dialog, which) -> {
+//                        mBrush.setWidth(mPaintWidth);
+//                        mEraser.setWidth(mPaintWidth);
+//                        painter.getBrush().setWidth(mPaintWidth);
+//                    })
+//                    .setNegativeButton("no", null)
+//                    .create()
+//                    .show();
         });
 
         tvPaint.setOnClickListener(v -> {

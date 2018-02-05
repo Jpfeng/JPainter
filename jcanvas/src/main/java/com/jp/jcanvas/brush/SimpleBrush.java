@@ -35,7 +35,7 @@ public class SimpleBrush extends BaseBrush<SimpleBrush> {
     }
 
     @Override
-    public void drawPreview() {
+    public void drawPreview(Canvas canvas, Track track) {
 
     }
 }

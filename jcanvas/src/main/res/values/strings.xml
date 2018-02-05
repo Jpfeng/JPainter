@@ -1,3 +1,5 @@
 <resources>
     <string name="app_name">JCanvas</string>
+    <string name="color_info_rgb">RGB</string>
+    <string name="color_info_hex">HEX</string>
 </resources>

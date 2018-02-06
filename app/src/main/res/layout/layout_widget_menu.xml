@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="utf-8"?>
+<merge xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <TextView
+        android:id="@+id/btn_menu_gallery"
+        android:layout_width="24dp"
+        android:layout_height="24dp"
+        android:layout_gravity="start|center_vertical"
+        android:layout_marginLeft="16dp"
+        android:layout_marginStart="16dp"
+        android:background="@android:color/darker_gray"
+        android:gravity="center"
+        android:text="G…"
+        android:visibility="invisible" />
+
+    <TextView
+        android:id="@+id/btn_menu_save"
+        android:layout_width="24dp"
+        android:layout_height="24dp"
+        android:layout_gravity="start|center_vertical"
+        android:layout_marginLeft="16dp"
+        android:layout_marginStart="16dp"
+        android:background="@android:color/darker_gray"
+        android:gravity="center"
+        android:text="存"
+        android:visibility="invisible" />
+
+    <TextView
+        android:id="@+id/btn_menu_clear"
+        android:layout_width="24dp"
+        android:layout_height="24dp"
+        android:layout_gravity="start|center_vertical"
+        android:layout_marginLeft="16dp"
+        android:layout_marginStart="16dp"
+        android:background="@android:color/darker_gray"
+        android:gravity="center"
+        android:text="清"
+        android:visibility="invisible" />
+
+    <TextView
+        android:id="@+id/btn_menu_settings"
+        android:layout_width="24dp"
+        android:layout_height="24dp"
+        android:layout_gravity="start|center_vertical"
+        android:layout_marginLeft="16dp"
+        android:layout_marginStart="16dp"
+        android:background="@android:color/darker_gray"
+        android:gravity="center"
+        android:text="设"
+        android:visibility="invisible" />
+
+    <TextView
+        android:id="@+id/btn_menu_import"
+        android:layout_width="24dp"
+        android:layout_height="24dp"
+        android:layout_gravity="start|center_vertical"
+        android:layout_marginLeft="16dp"
+        android:layout_marginStart="16dp"
+        android:background="@android:color/darker_gray"
+        android:gravity="center"
+        android:text="I…"
+        android:visibility="invisible" />
+
+    <TextView
+        android:id="@+id/btn_menu_layer"
+        android:layout_width="24dp"
+        android:layout_height="24dp"
+        android:layout_gravity="start|center_vertical"
+        android:layout_marginLeft="16dp"
+        android:layout_marginStart="16dp"
+        android:background="@android:color/darker_gray"
+        android:gravity="center"
+        android:text="L…"
+        android:visibility="invisible" />
+
+    <TextView
+        android:id="@+id/btn_menu_undo"
+        android:layout_width="24dp"
+        android:layout_height="24dp"
+        android:layout_gravity="start|center_vertical"
+        android:layout_marginLeft="16dp"
+        android:layout_marginStart="16dp"
+        android:background="@android:color/darker_gray"
+        android:gravity="center"
+        android:text="←"
+        android:visibility="invisible" />
+
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="start|center_vertical"
+        android:layout_marginLeft="16dp"
+        android:layout_marginStart="16dp"
+        android:orientation="vertical">
+
+        <TextView
+            android:id="@+id/btn_menu_color"
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:background="@android:color/darker_gray"
+            android:gravity="center"
+            android:text="C" />
+
+        <TextView
+            android:id="@+id/btn_menu_menu"
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:layout_marginTop="16dp"
+            android:background="@android:color/darker_gray"
+            android:gravity="center"
+            android:text="M" />
+
+        <TextView
+            android:id="@+id/btn_menu_brush"
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:layout_marginTop="16dp"
+            android:background="@android:color/darker_gray"
+            android:gravity="center"
+            android:text="B" />
+    </LinearLayout>
+</merge>

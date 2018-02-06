@@ -19,7 +19,7 @@ import android.view.ViewGroup;
 public class ToolDrawer extends ViewGroup {
 
     private static final int DURATION = 250;
-    private static final int BASE_ALPHA = 160;
+    private static final int BASE_ALPHA = 128;
 
     private static final int CLOSED = 0;
     private static final int OPENED = 1;

@@ -5,6 +5,7 @@ import android.animation.AnimatorListenerAdapter;
 import android.animation.AnimatorSet;
 import android.animation.ObjectAnimator;
 import android.content.Context;
+import android.content.res.TypedArray;
 import android.support.annotation.Nullable;
 import android.util.AttributeSet;
 import android.view.LayoutInflater;
@@ -31,7 +32,7 @@ public class ToolMenu extends FrameLayout {
 
     private AnimatorSet mCurrentAnim;
 
-    private int mToolMargin = 48;
+    private int mToolMargin;
     private ToolMenuListener mListener;
 
     public ToolMenu(Context context) {
@@ -39,11 +40,16 @@ public class ToolMenu extends FrameLayout {
     }
 
     public ToolMenu(Context context, @Nullable AttributeSet attrs) {
-        this(context, attrs, 0);
+        this(context, attrs, R.attr.ToolMenuStyle);
     }
 
     public ToolMenu(Context context, @Nullable AttributeSet attrs, int defStyleAttr) {
         super(context, attrs, defStyleAttr);
+
+        TypedArray ta = context.obtainStyledAttributes(
+                attrs, R.styleable.ToolMenu, defStyleAttr, R.style.DefaultToolMenuStyle);
+        mToolMargin = ta.getDimensionPixelSize(R.styleable.ToolMenu_tm_toolMargin, 0);
+        ta.recycle();
 
         View v = LayoutInflater.from(context).inflate(R.layout.layout_widget_menu, this);
         mBtnMenu = v.findViewById(R.id.btn_menu_menu);
@@ -112,17 +118,20 @@ public class ToolMenu extends FrameLayout {
 
     @Override
     public boolean onTouchEvent(MotionEvent event) {
+        boolean handled = super.onTouchEvent(event);
         switch (event.getAction()) {
             case MotionEvent.ACTION_DOWN:
                 if (opened) {
-                    return true;
+                    handled |= true;
                 }
+                break;
 
             case MotionEvent.ACTION_UP:
                 close();
+                handled |= true;
                 break;
         }
-        return super.onTouchEvent(event);
+        return handled;
     }
 
     public void open() {
@@ -144,7 +153,7 @@ public class ToolMenu extends FrameLayout {
         }
 
         int[] position = new int[2];
-        mBtnMenu.getLocationOnScreen(position);
+        mBtnMenu.getLocationInWindow(position);
 
         float x = position[0] + mBtnMenu.getWidth() + mToolMargin;
         float y = (getHeight() - h) / 2;
@@ -179,7 +188,7 @@ public class ToolMenu extends FrameLayout {
         mCurrentAnim.cancel();
 
         int[] position = new int[2];
-        mBtnMenu.getLocationOnScreen(position);
+        mBtnMenu.getLocationInWindow(position);
 
         float x = position[0];
         float y = position[1];

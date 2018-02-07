@@ -23,7 +23,7 @@ import android.view.SurfaceView;
 import android.view.animation.AccelerateDecelerateInterpolator;
 import android.widget.Scroller;
 
-import com.jp.jcanvas.CanvasGestureDetector.OnCanvasGestureListener;
+import com.jp.jcanvas.CanvasGestureDetector.CanvasGestureListener;
 import com.jp.jcanvas.CanvasInterface.OnScaleChangeListener;
 import com.jp.jcanvas.brush.BaseBrush;
 import com.jp.jcanvas.brush.SimpleBrush;
@@ -42,7 +42,7 @@ import java.util.ListIterator;
  *
  */
 public class JCanvas extends SurfaceView implements
-        SurfaceHolder.Callback, OnCanvasGestureListener, Runnable {
+        SurfaceHolder.Callback, CanvasGestureListener, Runnable {
 
     /**
      * 闲置状态。无触摸交互且无需更新视图。
@@ -511,7 +511,7 @@ public class JCanvas extends SurfaceView implements
     @Override
     public void run() {
         while (STATUS_DESTROYED != getStatus()) {
-            long time = 0;
+            long time = 0L;
 
             if (STATUS_IDLE != getStatus() || mNeedInvalidate) {
                 long start = System.currentTimeMillis();
@@ -580,6 +580,7 @@ public class JCanvas extends SurfaceView implements
         try {
             mCanvas = mHolder.lockCanvas();
             // 进行绘图操作
+            // 设置矩阵
             mMatrix.setTranslate(mOffset.x, mOffset.y);
             mMatrix.postScale(mScale, mScale, mOffset.x, mOffset.y);
 
@@ -606,6 +607,7 @@ public class JCanvas extends SurfaceView implements
      * 直接在 Bitmap 上重复 drawPath 会产生锯齿。每次绘制路径首先清空 Bitmap ，然后再绘制。
      * 参考：
      * https://medium.com/@ali.muzaffar/android-why-your-canvas-shapes-arent-smooth-aa2a3f450eb5
+     * </p>
      */
     private synchronized void updateCache(boolean full) {
         if (full) {
@@ -627,6 +629,9 @@ public class JCanvas extends SurfaceView implements
         }
     }
 
+    /**
+     * 绘制工作路径（正在绘制的路径）
+     */
     private void drawWorkingPath() {
         // 清空画布
         mWorkingCanvas.drawColor(Color.TRANSPARENT, PorterDuff.Mode.CLEAR);
@@ -661,11 +666,19 @@ public class JCanvas extends SurfaceView implements
         mNeedInvalidate = true;
     }
 
+    /**
+     * 进行完整绘制，包括重绘缓存栈
+     */
     private void requestFullInvalidate() {
         mNeedFullInvalidate = true;
         requestInvalidate();
     }
 
+    /**
+     * 设置背景
+     *
+     * @param background 背景
+     */
     @Override
     public void setBackground(Drawable background) {
         super.setBackground(background);
@@ -677,6 +690,11 @@ public class JCanvas extends SurfaceView implements
         requestInvalidate();
     }
 
+    /**
+     * 设置背景颜色
+     *
+     * @param color 背景颜色
+     */
     @Override
     public void setBackgroundColor(int color) {
         super.setBackgroundColor(color);
@@ -820,7 +838,7 @@ public class JCanvas extends SurfaceView implements
         mTrack.reset();
         mUndoStack.clear();
         mRedoStack.clear();
-        requestInvalidate();
+        requestFullInvalidate();
     }
 
     public void stopInteract(boolean stop) {

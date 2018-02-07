@@ -31,7 +31,7 @@ class CanvasGestureDetector {
 
     private Handler mHandler;
     private VelocityTracker mVelocityTracker;
-    private final OnCanvasGestureListener mListener;
+    private final CanvasGestureListener mListener;
 
     private boolean mIsFirstPointerTouching = false;
     private int mFirstPointerId = -1;
@@ -48,7 +48,7 @@ class CanvasGestureDetector {
     private Velocity mPivotVelocity;
     private Track mTrack;
 
-    CanvasGestureDetector(Context context, @NonNull OnCanvasGestureListener listener) {
+    CanvasGestureDetector(Context context, @NonNull CanvasGestureListener listener) {
         mHandler = new GestureHandler();
         mListener = listener;
         init(context);
@@ -140,7 +140,7 @@ class CanvasGestureDetector {
 
             case MotionEvent.ACTION_MOVE:
                 if (mIsScaling) {
-                    // 当前只有一个触摸点且状态为 mIsScaling 。当前为准备进入移动状态
+                    // 当前只有一个触摸点且状态为 mIsScaling 。此时应当进入移动状态
                     // 判断是否应该进入 mIsMoving 状态
                     if (1 == event.getPointerCount()) {
                         double pointerSpan = Math.hypot(x - mMoveLast.x, y - mMoveLast.y);
@@ -327,6 +327,7 @@ class CanvasGestureDetector {
         final boolean pointerUp = MotionEvent.ACTION_POINTER_UP == event.getActionMasked();
         final int skipIndex = pointerUp ? event.getActionIndex() : -1;
 
+        // 计算控制点。
         float sumX = 0f;
         float sumY = 0f;
         final int count = event.getPointerCount();
@@ -343,6 +344,7 @@ class CanvasGestureDetector {
         final float pivotX = sumX / div;
         final float pivotY = sumY / div;
 
+        // 计算各触摸点到控制点的平均距离
         float devSumX = 0f;
         float devSumY = 0f;
 
@@ -358,6 +360,7 @@ class CanvasGestureDetector {
         final float devX = devSumX / div;
         final float devY = devSumY / div;
 
+        // 得出最终的span值
         final float spanX = devX * 2;
         final float spanY = devY * 2;
 
@@ -389,7 +392,7 @@ class CanvasGestureDetector {
         return new Velocity(vX, vY);
     }
 
-    public interface OnCanvasGestureListener {
+    public interface CanvasGestureListener {
         boolean onActionDown(Point down);
 
         boolean onSingleTapUp(Point focus);

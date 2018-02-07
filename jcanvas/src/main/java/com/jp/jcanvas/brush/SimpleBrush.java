@@ -21,21 +21,18 @@ public class SimpleBrush extends BaseBrush<SimpleBrush> {
 
     @Override
     public void initBrush() {
-
     }
 
     @Override
     public SimpleBrush cloneBrush() {
-        return null;
+        return new SimpleBrush();
     }
 
     @Override
     public void drawTrack(Canvas canvas, Track track) {
-
     }
 
     @Override
     public void drawPreview(Canvas canvas, Track track) {
-
     }
 }

@@ -1,9 +1,12 @@
 package com.jp.jpainter;
 
 import android.Manifest;
+import android.animation.ObjectAnimator;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Message;
 import android.support.annotation.ColorInt;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
@@ -19,7 +22,6 @@ import com.jp.jcanvas.brush.BaseBrush;
 import com.jp.jcanvas.brushselector.BrushSelector;
 import com.jp.jcanvas.colorpicker.ColorPicker;
 import com.jp.jpainter.brush.BrushTag01;
-import com.jp.jpainter.brush.EraserTag01;
 import com.jp.jpainter.utils.SDUtil;
 import com.jp.jpainter.widgets.ToolDrawer;
 import com.jp.jpainter.widgets.ToolMenu;
@@ -31,21 +33,65 @@ import java.util.Locale;
 
 public class PainterActivity extends AppCompatActivity {
 
+    private static final int SHOW_SCALE = 1;
+    private static final int HIDE_SCALE = 2;
+
     private BaseBrush mBrush;
 
     @ColorInt
     private int mColor;
     private int mPaintWidth;
 
+    private Handler mHandler;
+
+    private TextView mTvScale;
+    private int mTvScaleHeight;
+    private int[] mTvScalePosition;
+
+    private ObjectAnimator mScaleOut;
+    private ObjectAnimator mScaleIn;
+
+    private class PainterHandler extends Handler {
+        PainterHandler() {
+            super();
+        }
+
+        @Override
+        public void handleMessage(Message msg) {
+            switch (msg.what) {
+                case SHOW_SCALE:
+                    if (null != mScaleOut) {
+                        mScaleOut.cancel();
+                    }
+                    mScaleIn = ObjectAnimator.ofFloat(mTvScale, "y", mTvScalePosition[1]);
+                    mScaleIn.start();
+                    break;
+
+                case HIDE_SCALE:
+                    if (null != mScaleIn) {
+                        mScaleIn.cancel();
+                    }
+                    mScaleOut = ObjectAnimator.ofFloat(mTvScale, "y", -mTvScaleHeight);
+                    mScaleOut.start();
+                    break;
+
+                default:
+                    throw new RuntimeException("Unknown message " + msg);
+            }
+        }
+    }
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_painter);
 
+        mHandler = new PainterHandler();
+
         ToolDrawer cPicker = findViewById(R.id.cv_color_picker);
         JCanvas painter = findViewById(R.id.sp_painter);
         ToolMenu menu = findViewById(R.id.tm_tool_menu);
-        TextView tvScale = findViewById(R.id.tv_scale);
+        mTvScale = findViewById(R.id.tv_scale);
 
         ColorPicker cp = new ColorPicker(getApplicationContext());
         BrushSelector bs = new BrushSelector(getApplicationContext());
@@ -162,7 +208,7 @@ public class PainterActivity extends AppCompatActivity {
         mPaintWidth = 16;
         mBrush.setWidth(mPaintWidth);
 
-        tvScale.setText("1.0x");
+        mTvScale.setText("1.0x");
         cp.setColor(Color.RED);
         cp.setOnConfirmListener(view -> {
             mColor = cp.getColor();
@@ -174,23 +220,33 @@ public class PainterActivity extends AppCompatActivity {
 
         painter.setBrush(mBrush);
 
+        mTvScale.post(() -> {
+            mTvScalePosition = new int[2];
+            mTvScale.getLocationInWindow(mTvScalePosition);
+            mTvScaleHeight = mTvScale.getHeight();
+            mTvScale.setY(-mTvScaleHeight);
+        });
+
         painter.setOnScaleChangeListener(new CanvasInterface.OnScaleChangeListener() {
             @Override
             public void onScaleChangeStart(float startScale) {
-                tvScale.setText(
+                mTvScale.setText(
                         String.valueOf((float) (Math.round(startScale * 10)) / 10).concat("x"));
+                mHandler.removeMessages(HIDE_SCALE);
+                mHandler.sendEmptyMessage(SHOW_SCALE);
             }
 
             @Override
             public void onScaleChange(float currentScale) {
-                tvScale.setText(
+                mTvScale.setText(
                         String.valueOf((float) (Math.round(currentScale * 10)) / 10).concat("x"));
             }
 
             @Override
             public void onScaleChangeEnd(float endScale) {
-                tvScale.setText(
+                mTvScale.setText(
                         String.valueOf((float) (Math.round(endScale * 10)) / 10).concat("x"));
+                mHandler.sendEmptyMessageDelayed(HIDE_SCALE, 2000);
             }
         });
 

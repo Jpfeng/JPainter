@@ -19,9 +19,10 @@ import android.widget.TextView;
 import com.jp.jcanvas.CanvasInterface;
 import com.jp.jcanvas.JCanvas;
 import com.jp.jcanvas.brush.BaseBrush;
-import com.jp.jcanvas.brushselector.BrushSelector;
-import com.jp.jcanvas.colorpicker.ColorPicker;
+import com.jp.jcanvas.widget.BrushSelector;
+import com.jp.jcanvas.widget.ColorPicker;
 import com.jp.jpainter.brush.BrushTag01;
+import com.jp.jpainter.brush.EraserTag01;
 import com.jp.jpainter.utils.SDUtil;
 import com.jp.jpainter.widgets.ToolDrawer;
 import com.jp.jpainter.widgets.ToolMenu;
@@ -40,7 +41,6 @@ public class PainterActivity extends AppCompatActivity {
 
     @ColorInt
     private int mColor;
-    private int mPaintWidth;
 
     private Handler mHandler;
 
@@ -95,6 +95,10 @@ public class PainterActivity extends AppCompatActivity {
 
         ColorPicker cp = new ColorPicker(getApplicationContext());
         BrushSelector bs = new BrushSelector(getApplicationContext());
+
+        mBrush = new BrushTag01();
+        bs.addBrush(mBrush);
+        bs.addBrush(new EraserTag01());
 
         menu.setToolMenuListener(new ToolMenu.ToolMenuListener() {
             @Override
@@ -201,19 +205,17 @@ public class PainterActivity extends AppCompatActivity {
             @Override
             public void onDrawerClosed(View toolDrawer) {
                 painter.stopInteract(false);
+                mBrush = bs.getBrush();
+                painter.setBrush(mBrush);
             }
         });
-
-        mBrush = new BrushTag01();
-        mPaintWidth = 16;
-        mBrush.setWidth(mPaintWidth);
 
         mTvScale.setText("1.0x");
         cp.setColor(Color.RED);
         cp.setOnConfirmListener(view -> {
+            cPicker.close();
             mColor = cp.getColor();
             mBrush.setColor(mColor);
-            cPicker.close();
             painter.stopInteract(false);
         });
         mBrush.setColor(cp.getColor());

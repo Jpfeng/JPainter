@@ -1,4 +1,4 @@
-package com.jp.jcanvas.colorpicker;
+package com.jp.jcanvas.widget;
 
 import android.content.Context;
 import android.graphics.Color;
@@ -6,7 +6,6 @@ import android.support.annotation.ColorInt;
 import android.support.annotation.Nullable;
 import android.util.AttributeSet;
 import android.view.LayoutInflater;
-import android.view.MotionEvent;
 import android.view.View;
 import android.widget.LinearLayout;
 import android.widget.TextView;

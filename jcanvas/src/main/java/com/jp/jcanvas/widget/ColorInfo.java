@@ -1,4 +1,4 @@
-package com.jp.jcanvas.colorpicker;
+package com.jp.jcanvas.widget;
 
 import android.content.Context;
 import android.content.res.TypedArray;

@@ -41,7 +41,7 @@ public class BrushTag01 extends BaseBrush<BrushTag01> {
         BrushTag01 brush = new BrushTag01();
         brush.mPaint.set(this.mPaint);
         brush.mColor = this.mColor;
-        brush.mWidth = this.mWidth;
+        brush.mSize = this.mSize;
         return brush;
     }
 
@@ -53,6 +53,7 @@ public class BrushTag01 extends BaseBrush<BrushTag01> {
 
     @Override
     public void drawPreview(Canvas canvas, Track track) {
-
+        Path path = track.getPath();
+        canvas.drawPath(path, mPaint);
     }
 }

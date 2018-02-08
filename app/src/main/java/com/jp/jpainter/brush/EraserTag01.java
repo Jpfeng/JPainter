@@ -41,7 +41,7 @@ public class EraserTag01 extends BaseBrush<EraserTag01> {
         EraserTag01 brush = new EraserTag01();
         brush.mPaint.set(this.mPaint);
         brush.mColor = this.mColor;
-        brush.mWidth = this.mWidth;
+        brush.mSize = this.mSize;
         return brush;
     }
 
@@ -54,5 +54,11 @@ public class EraserTag01 extends BaseBrush<EraserTag01> {
     @Override
     public void drawPreview(Canvas canvas, Track track) {
 
+        int layer = canvas.saveLayer(0, 0, canvas.getWidth(), canvas.getHeight(), null, Canvas.ALL_SAVE_FLAG);
+        int color = mPaint.getColor();
+        canvas.drawColor(Color.rgb(Color.red(color), Color.green(color), Color.blue(color)));
+        Path path = track.getPath();
+        canvas.drawPath(path, mPaint);
+        canvas.restoreToCount(layer);
     }
 }

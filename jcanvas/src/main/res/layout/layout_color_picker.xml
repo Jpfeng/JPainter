@@ -5,7 +5,7 @@
     android:background="@android:color/white"
     android:orientation="horizontal">
 
-    <com.jp.jcanvas.colorpicker.HueWheel
+    <com.jp.jcanvas.widget.HueWheel
         android:id="@+id/hw_hue"
         android:layout_width="wrap_content"
         android:layout_height="match_parent"
@@ -19,7 +19,7 @@
         android:layout_marginRight="16dp"
         android:orientation="vertical">
 
-        <com.jp.jcanvas.colorpicker.SaturationValuePanel
+        <com.jp.jcanvas.widget.SaturationValuePanel
             android:id="@+id/svp_panel"
             android:layout_width="wrap_content"
             android:layout_height="0dp"
@@ -33,7 +33,7 @@
             android:layout_marginTop="16dp"
             android:orientation="horizontal">
 
-            <com.jp.jcanvas.colorpicker.ColorPreview
+            <com.jp.jcanvas.widget.ColorPreview
                 android:id="@+id/cpv_preview"
                 android:layout_width="0dp"
                 android:layout_height="match_parent"
@@ -44,7 +44,7 @@
                 android:layout_height="0dp"
                 android:layout_gravity="center_vertical" />
 
-            <com.jp.jcanvas.colorpicker.ColorInfo
+            <com.jp.jcanvas.widget.ColorInfo
                 android:id="@+id/ci_info"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"

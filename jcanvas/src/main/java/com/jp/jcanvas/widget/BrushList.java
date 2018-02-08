@@ -1,4 +1,4 @@
-package com.jp.jcanvas.brushselector;
+package com.jp.jcanvas.widget;
 
 import android.content.Context;
 import android.support.annotation.Nullable;
@@ -44,22 +44,32 @@ class BrushList extends RecyclerView {
         setAdapter(mAdapter);
     }
 
-    public BrushList addBrush(BaseBrush brush) {
+    public void addBrush(BaseBrush brush) {
         mBrushes.add(brush);
         mAdapter.notifyItemInserted(mBrushes.size() - 1);
-        return this;
+        if (null == mSelected) {
+            selectBrush(brush);
+        }
     }
 
-    public BrushList addBrushes(ArrayList<BaseBrush> brushes) {
+    public void addBrushes(ArrayList<BaseBrush> brushes) {
         mBrushes.addAll(brushes);
         mAdapter.notifyItemRangeInserted(
                 mBrushes.size() - brushes.size(), mBrushes.size() - 1);
-        return this;
+        if (null == mSelected) {
+            selectBrush(brushes.get(0));
+        }
     }
 
-    public BrushList setOnBrushSelectListener(OnBrushSelectListener listener) {
+    public void setOnBrushSelectListener(OnBrushSelectListener listener) {
         mListener = listener;
-        return this;
+    }
+
+    public void selectBrush(BaseBrush brush) {
+        mSelected = brush;
+        if (null != mListener) {
+            mListener.onBrushSelected(mSelected);
+        }
     }
 
     private class BrushAdapter extends Adapter<BrushViewHolder> {
@@ -76,10 +86,7 @@ class BrushList extends RecyclerView {
                 final BaseBrush brush = mBrushes.get(position);
                 holder.ivIcon.setImageDrawable(brush.getIcon());
                 holder.ivIcon.setOnClickListener(v -> {
-                    mSelected = brush;
-                    if (null != mListener) {
-                        mListener.onBrushSelected(mSelected);
-                    }
+                    selectBrush(brush);
                 });
             }
         }

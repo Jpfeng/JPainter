@@ -6,19 +6,19 @@
     android:background="@android:color/white"
     android:orientation="horizontal">
 
-    <com.jp.jcanvas.brushselector.BrushList
+    <com.jp.jcanvas.widget.BrushList
         android:id="@+id/bl_list"
         android:layout_width="wrap_content"
         android:layout_height="match_parent" />
 
-    <com.jp.jcanvas.colorpicker.ColorSeekBar
+    <com.jp.jcanvas.widget.ColorSeekBar
         android:id="@+id/csb_size"
         android:layout_width="wrap_content"
         android:layout_height="match_parent"
         android:layout_margin="16dp"
         app:csb_orientation="vertical" />
 
-    <com.jp.jcanvas.colorpicker.ColorSeekBar
+    <com.jp.jcanvas.widget.ColorSeekBar
         android:id="@+id/csb_alpha"
         android:layout_width="wrap_content"
         android:layout_height="match_parent"
@@ -26,8 +26,9 @@
         android:layout_marginTop="16dp"
         app:csb_orientation="vertical" />
 
-    <!--<com.jp.jcanvas.brushselector.BrushPreview-->
-        <!--android:layout_width="wrap_content"-->
-        <!--android:layout_height="match_parent"-->
-        <!--android:layout_margin="16dp" />-->
+    <com.jp.jcanvas.widget.BrushPreview
+        android:id="@+id/bp_brush_preview"
+        android:layout_width="180dp"
+        android:layout_height="match_parent"
+        android:layout_margin="16dp" />
 </LinearLayout>

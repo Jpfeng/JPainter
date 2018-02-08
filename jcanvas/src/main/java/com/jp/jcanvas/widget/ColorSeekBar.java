@@ -1,4 +1,4 @@
-package com.jp.jcanvas.colorpicker;
+package com.jp.jcanvas.widget;
 
 import android.content.Context;
 import android.content.res.TypedArray;
@@ -26,7 +26,7 @@ import com.jp.jcanvas.R;
 /**
  *
  */
-public class ColorSeekBar extends View {
+class ColorSeekBar extends View {
 
     public static final int HORIZONTAL = 0;
     public static final int VERTICAL = 1;

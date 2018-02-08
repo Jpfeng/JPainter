@@ -13,10 +13,12 @@ import com.jp.jcanvas.entity.Track;
  */
 public abstract class BaseBrush<T extends BaseBrush> {
 
+    protected static final int MAX_SIZE = 99;
+
     @ColorInt
     protected int mColor;
     protected Paint mPaint;
-    protected float mWidth;
+    protected float mSize;
     protected float mAlpha;
 
     public BaseBrush() {
@@ -33,9 +35,9 @@ public abstract class BaseBrush<T extends BaseBrush> {
         mPaint.setColor(color);
     }
 
-    public void setWidth(float width) {
-        mWidth = width;
-        mPaint.setStrokeWidth(width);
+    public void setSize(float size) {
+        mSize = size;
+        mPaint.setStrokeWidth(size * MAX_SIZE);
     }
 
     public void setAlpha(@FloatRange(from = 0f, to = 1f) float alpha) {

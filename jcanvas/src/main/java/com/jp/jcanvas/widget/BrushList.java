@@ -85,9 +85,7 @@ class BrushList extends RecyclerView {
             if (mBrushes.size() > position && null != mBrushes.get(position)) {
                 final BaseBrush brush = mBrushes.get(position);
                 holder.ivIcon.setImageDrawable(brush.getIcon());
-                holder.ivIcon.setOnClickListener(v -> {
-                    selectBrush(brush);
-                });
+                holder.ivIcon.setOnClickListener(v -> selectBrush(brush));
             }
         }
 

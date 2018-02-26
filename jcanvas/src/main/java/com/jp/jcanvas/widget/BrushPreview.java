@@ -26,7 +26,6 @@ class BrushPreview extends View {
 
     private BaseBrush mBrush;
     private Track mTrack;
-    private BitmapShader mBGShader;
     private Paint mPaint;
 
     public BrushPreview(Context context) {
@@ -40,9 +39,9 @@ class BrushPreview extends View {
     public BrushPreview(Context context, @Nullable AttributeSet attrs, int defStyleAttr) {
         super(context, attrs, defStyleAttr);
         Bitmap bitmap = BitmapFactory.decodeResource(getResources(), R.drawable.canvas_background);
-        mBGShader = new BitmapShader(bitmap, Shader.TileMode.REPEAT, Shader.TileMode.REPEAT);
+        BitmapShader bgShader = new BitmapShader(bitmap, Shader.TileMode.REPEAT, Shader.TileMode.REPEAT);
         mPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-        mPaint.setShader(mBGShader);
+        mPaint.setShader(bgShader);
     }
 
     @Override

@@ -8,6 +8,8 @@ import android.support.annotation.NonNull;
 import android.view.MotionEvent;
 import android.view.ViewConfiguration;
 
+import java.lang.ref.WeakReference;
+
 /**
  *
  */
@@ -34,7 +36,7 @@ class PanelGestureDetector {
     private float mTotalY;
 
     PanelGestureDetector(Context context, RectF area, @NonNull OnPanelGestureListener listener) {
-        mHandler = new GestureHandler();
+        mHandler = new GestureHandler(this);
         mListener = listener;
         init(context, area);
     }
@@ -42,7 +44,7 @@ class PanelGestureDetector {
     private void init(Context context, RectF area) {
         ViewConfiguration viewConfiguration = ViewConfiguration.get(context);
         mTouchSlop = viewConfiguration.getScaledTouchSlop();
-        mHandler = new GestureHandler();
+        mHandler = new GestureHandler(this);
         mMode = STATUS_IDLE;
 
         updateLimit(area);
@@ -57,16 +59,20 @@ class PanelGestureDetector {
         mTotalY = mMaxY - mMinY;
     }
 
-    private class GestureHandler extends Handler {
-        GestureHandler() {
+    static class GestureHandler extends Handler {
+        WeakReference<PanelGestureDetector> mGD;
+
+        GestureHandler(PanelGestureDetector gD) {
             super();
+            mGD = new WeakReference<>(gD);
         }
 
         @Override
         public void handleMessage(Message msg) {
+            PanelGestureDetector gD = mGD.get();
             switch (msg.what) {
                 case MSG_SINGLE_TOUCH:
-                    mMode = STATUS_SINGLE_TOUCH;
+                    gD.mMode = STATUS_SINGLE_TOUCH;
                     break;
 
                 default:

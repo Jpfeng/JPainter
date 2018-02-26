@@ -15,6 +15,8 @@ import com.jp.jcanvas.entity.Scale;
 import com.jp.jcanvas.entity.Track;
 import com.jp.jcanvas.entity.Velocity;
 
+import java.lang.ref.WeakReference;
+
 /**
  *
  */
@@ -49,7 +51,7 @@ class CanvasGestureDetector {
     private Track mTrack;
 
     CanvasGestureDetector(Context context, @NonNull CanvasGestureListener listener) {
-        mHandler = new GestureHandler();
+        mHandler = new GestureHandler(this);
         mListener = listener;
         init(context);
     }
@@ -67,20 +69,24 @@ class CanvasGestureDetector {
         mTrack = new Track();
     }
 
-    private class GestureHandler extends Handler {
-        GestureHandler() {
+    static class GestureHandler extends Handler {
+        WeakReference<CanvasGestureDetector> mGD;
+
+        GestureHandler(CanvasGestureDetector gD) {
             super();
+            mGD = new WeakReference<>(gD);
         }
 
         @Override
         public void handleMessage(Message msg) {
+            CanvasGestureDetector gD = mGD.get();
             switch (msg.what) {
                 case START_DRAW:
-                    mIsDrawing = true;
+                    gD.mIsDrawing = true;
                     break;
 
                 case START_MOVE:
-                    mIsMoving = true;
+                    gD.mIsMoving = true;
                     break;
 
                 default:

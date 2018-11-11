@@ -167,7 +167,7 @@ public class JCanvas extends SurfaceView implements
         Bitmap bitmap = BitmapFactory.decodeResource(getResources(), R.drawable.canvas_background);
         BitmapShader s = new BitmapShader(bitmap, Shader.TileMode.REPEAT, Shader.TileMode.REPEAT);
         mPatternPaint.setShader(s);
-        bitmap.recycle();
+//        bitmap.recycle();
 
         mCacheCanvas = new Canvas();
         mWorkingCanvas = new Canvas();
@@ -245,8 +245,8 @@ public class JCanvas extends SurfaceView implements
     @Override
     public void surfaceDestroyed(SurfaceHolder holder) {
         setStatus(STATUS_DESTROYED);
-        mCache.recycle();
-        mWorkingSpace.recycle();
+//        mCache.recycle();
+//        mWorkingSpace.recycle();
     }
 
     private Point mDown;
